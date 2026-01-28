@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 import Dashboard from './components/Dashboard';
@@ -7,18 +7,36 @@ import WelcomeScreen from './components/WelcomeScreen';
 import InfoSection from './components/InfoSection'; 
 import StepForm from './components/StepForm'; 
 
-import { Settings, Info, LayoutDashboard, Droplet } from 'lucide-react';
-import { triggerConfetti } from './utils/celebration';
+import {
+  Settings,
+  Info,
+  LayoutDashboard,
+  Droplet,
+  BarChart3,
+  Trophy
+} from 'lucide-react';
+
 import { Toaster, toast } from 'sonner';
 
+// Pages
+import ProgressPage from './pages/ProgressPage';
+import RankingPage from './pages/RankingPage';
+
 function App() {
+  // 🆔 ID ANÓNIMO (ranking)
+  useEffect(() => {
+    if (!localStorage.getItem('h2o_anonymous_id')) {
+      localStorage.setItem('h2o_anonymous_id', crypto.randomUUID());
+    }
+  }, []);
+
   // 1. PERFIL DEL USUARIO
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('h2o_user');
     return saved ? JSON.parse(saved) : null;
   });
 
-  // 2. HISTORIAL (siempre lo tratamos como ordenado DESC por fecha)
+  // 2. HISTORIAL
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('h2o_history');
     return saved ? JSON.parse(saved) : [];
@@ -29,7 +47,6 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   // 4. GUARDAR REGISTRO
-// Dentro de App.jsx, reemplaza la función saveRecord por esta:
   const saveRecord = (record) => {
     const newHistory = [record, ...history].sort(
       (a, b) => new Date(b.fechaISO) - new Date(a.fechaISO)
@@ -38,7 +55,6 @@ function App() {
     setHistory(newHistory);
     localStorage.setItem('h2o_history', JSON.stringify(newHistory));
 
-    // Solo un mensaje simple de guardado, los logros los maneja el otro componente
     toast.info('Registro guardado correctamente', {
       description: `Consumo total calculado: ${record.total} Litros.`,
     });
@@ -46,7 +62,7 @@ function App() {
     setIsFormOpen(false);
   };
 
-
+  // 5. RESET
   const handleLogout = () => {
     if (
       confirm(
@@ -58,7 +74,7 @@ function App() {
     }
   };
 
-  // PANTALLA DE BIENVENIDA
+  // 🌱 BIENVENIDA
   if (!user) {
     return (
       <WelcomeScreen
@@ -82,7 +98,7 @@ function App() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-800 leading-none capitalize">
-              ¡Hola, {user.nombre}! 👋
+              ¡Hola, {user.nombre}!
             </h2>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
               {user.email} • {user.edad} años
@@ -91,6 +107,7 @@ function App() {
         </div>
 
         <div className="flex gap-2">
+          {/* DASHBOARD */}
           <button
             onClick={() => {
               setActiveTab('dashboard');
@@ -105,6 +122,39 @@ function App() {
             <LayoutDashboard size={20} />
           </button>
 
+          {/* PROGRESS */}
+          <button
+            onClick={() => {
+              setActiveTab('progress');
+              setIsFormOpen(false);
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              activeTab === 'progress'
+                ? 'bg-blue-50 text-blue-600 shadow-inner'
+                : 'text-slate-400 hover:bg-slate-50'
+            }`}
+            title="Progreso"
+          >
+            <BarChart3 size={20} />
+          </button>
+
+          {/* RANKING */}
+          <button
+            onClick={() => {
+              setActiveTab('ranking');
+              setIsFormOpen(false);
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              activeTab === 'ranking'
+                ? 'bg-blue-50 text-blue-600 shadow-inner'
+                : 'text-slate-400 hover:bg-slate-50'
+            }`}
+            title="Ranking"
+          >
+            <Trophy size={20} />
+          </button>
+
+          {/* INFO */}
           <button
             onClick={() => {
               setActiveTab('info');
@@ -119,6 +169,7 @@ function App() {
             <Info size={20} />
           </button>
 
+          {/* RESET */}
           <button
             onClick={handleLogout}
             className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-all"
@@ -131,7 +182,7 @@ function App() {
 
       {/* CONTENIDO */}
       <main className="space-y-12">
-        {activeTab === 'dashboard' ? (
+        {activeTab === 'dashboard' && (
           <>
             {!isFormOpen ? (
               <motion.button
@@ -155,7 +206,10 @@ function App() {
                 </div>
               </motion.button>
             ) : (
-              <StepForm onSave={saveRecord} onCancel={() => setIsFormOpen(false)} />
+              <StepForm
+                onSave={saveRecord}
+                onCancel={() => setIsFormOpen(false)}
+              />
             )}
 
             <div className="pt-10 border-t border-slate-100">
@@ -163,7 +217,17 @@ function App() {
               <Achievements history={history} />
             </div>
           </>
-        ) : (
+        )}
+
+        {activeTab === 'progress' && (
+          <ProgressPage history={history} />
+        )}
+
+        {activeTab === 'ranking' && (
+          <RankingPage history={history} />
+        )}
+
+        {activeTab === 'info' && (
           <InfoSection />
         )}
       </main>
