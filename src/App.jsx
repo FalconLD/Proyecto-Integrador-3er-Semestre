@@ -94,7 +94,7 @@ function App() {
       <nav className="flex justify-between items-center mb-10 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-200">
-            H2O
+            WM
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-800 leading-none capitalize">
@@ -234,7 +234,7 @@ function App() {
 
       <footer className="mt-20 pt-10 border-t border-slate-100 text-center">
         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
-          H2O.Impact • Proyecto Integrador PUCE 2026
+          WaterMarker • Proyecto Integrador PUCE 2026
         </p>
       </footer>
     </div>
