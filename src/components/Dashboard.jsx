@@ -121,7 +121,7 @@ export default function DashboardPremium({ history }) {
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold flex items-center gap-2 text-slate-700">
-            <Calendar className="text-blue-500" /> Tendencia Semanal
+            <Calendar className="text-blue-500" /> Tendencia por cada día
           </h3>
         </div>
         {history.length > 0 ? (
