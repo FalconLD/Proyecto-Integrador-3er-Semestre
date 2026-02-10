@@ -9,24 +9,47 @@ import { useFormValidation } from '../utils/useFormValidation';
 import '../index.css'; // Asegúrate de incluir los estilos para quitar spinners
 
 export default function WelcomeScreen({ onComplete }) {
+  
   const validate = (data) => {
     const errors = {};
-
-    // Nombre ≥ 3 caracteres
-    if (data.nombre && data.nombre.trim().length < 3) {
+  
+    const soloLetrasMinusculas = /^[a-z]+$/;
+    const soloNumeros = /^[0-9]+$/; 
+    const emailPuce = /^[a-z]+@puce\.edu\.ec$/; 
+  
+    // --- Validación de Nombre ---
+    if (!data.nombre || data.nombre.trim() === '') {
+      errors.nombre = 'El nombre es obligatorio';
+    } else if (data.nombre.trim().length < 3) {
       errors.nombre = 'Ingrese su nombre completo';
+    } else if (!soloLetrasMinusculas.test(data.nombre)) {
+      errors.nombre = 'Solo se permiten letras en minúsculas';
     }
-
-    // Edad ≥ 16
-    if (data.edad && data.edad < 16) {
-      errors.edad = 'Edad mínima 16 años';
-    }
-
-    // Correo PUCE
-    if (data.email && !data.email.endsWith('@puce.edu.ec')) {
+  
+    // --- Validación de Edad ---
+    const edadTexto = String(data.edad || '').trim();
+  
+    if (!data.edad) {
+      errors.edad = 'La edad es obligatoria';
+    } else if (!soloNumeros.test(edadTexto)) {
+      errors.edad = 'Solo se permiten números';
+    } else if (parseInt(data.edad) < 16) {
+      errors.edad = 'La edad mínima es de 16 años';
+    } else if (edadTexto.length < 2) {
+      errors.edad = 'Tu edad debe tener al menos dos dígitos';
+    } 
+  
+    // --- Validación de Correo ---
+    if (!data.email || data.email.trim() === '') {
+      errors.email = 'El correo es obligatorio';
+    } else if (!data.email.endsWith('@puce.edu.ec')) {
       errors.email = 'Debe usar correo institucional @puce.edu.ec';
-    }
-
+    } else if (data.email.trim().length < 20) {
+      errors.email = 'Tu correo es demasiado corto para ser autenticado';
+    } else if (!emailPuce.test(data.email)) {
+      errors.email = 'Solo se aceptan correos con letras en minúsculas';
+    } 
+  
     return errors;
   };
 
@@ -53,7 +76,7 @@ export default function WelcomeScreen({ onComplete }) {
     animate: { scale: 1, opacity: 1 },
     exit: { scale: 0.5, opacity: 0 },
     transition: { type: 'spring', stiffness: 400, damping: 20 }
-  };
+  }; 
 
   const inputState = (field) => {
     if (!touched[field]) return 'border-slate-200';
@@ -63,6 +86,18 @@ export default function WelcomeScreen({ onComplete }) {
   };
 
   const shouldShake = (field) => touched[field] && errors[field];
+
+  const handleEmailBlur = () => {
+    handleBlur('email');
+  
+    if (
+      values.email &&
+      !values.email.includes('@')
+    ) {
+      handleChange('email', `${values.email}@puce.edu.ec`);
+    }
+  };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans">
@@ -87,7 +122,7 @@ export default function WelcomeScreen({ onComplete }) {
         {/* Título */}
         <h1 className="text-4xl font-extrabold text-center 
           bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-8">
-          H2O.Impact
+          WaterMark
         </h1>
 
         <form onSubmit={handleSubmit(onComplete)} className="space-y-5">
@@ -95,11 +130,11 @@ export default function WelcomeScreen({ onComplete }) {
           {/* Nombre completo */}
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Nombre completo
+              Nombre de usuario
             </label>
             <motion.div animate={shouldShake('nombre') ? shake : {}} className="relative">
               <input
-                placeholder="Juan Pérez"
+                placeholder="ejemplo: juanperez"
                 value={values.nombre}
                 onChange={(e) => handleChange('nombre', e.target.value)}
                 onBlur={() => handleBlur('nombre')}
@@ -170,15 +205,16 @@ export default function WelcomeScreen({ onComplete }) {
                 Correo institucional
               </label>
               <motion.div animate={shouldShake('email') ? shake : {}} className="relative">
-                <input
-                  type="email"
-                  placeholder="usuario@puce.edu.ec"
-                  value={values.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  onBlur={() => handleBlur('email')}
-                  className={`w-full p-4 rounded-xl bg-white border text-slate-700 placeholder:text-slate-400
-                    focus:ring-2 outline-none transition ${inputState('email')}`}
-                />
+              <input
+                type="email"
+                placeholder="usuario"
+                value={values.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                onBlur={handleEmailBlur}
+                className={`w-full p-4 rounded-xl bg-white border text-slate-700 placeholder:text-slate-400
+                  focus:ring-2 outline-none transition ${inputState('email')}`}
+              />
+
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   <AnimatePresence>
                     {touched.email && values.email && errors.email && (
