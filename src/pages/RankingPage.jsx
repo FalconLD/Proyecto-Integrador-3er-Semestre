@@ -7,6 +7,7 @@ import { getUserPosition, getCampusAverage } from "../utils/ranking";
 import { checkRankingAchievements } from "../utils/rankingAchievements";
 import { triggerConfetti } from "../utils/celebration";
 import { api } from "../services/api";
+import Achievements from "../components/Achievements";
 
 export default function RankingPage({ user, history }) {
   const [ranking, setRanking] = useState([]);
@@ -128,6 +129,10 @@ export default function RankingPage({ user, history }) {
           />
         )}
       </motion.div>
+      <div className="pt-10 border-t border-slate-100">
+        <Achievements history={history} />
+      </div>
     </motion.section>
+
   );
 }
