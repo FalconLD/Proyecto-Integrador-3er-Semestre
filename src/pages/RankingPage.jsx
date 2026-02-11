@@ -1,18 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 import Ranking from "../components/Ranking";
-import {
-  buildRanking,
-  getUserPosition,
-  getCampusAverage
-} from "../utils/ranking";
+import { getUserPosition, getCampusAverage } from "../utils/ranking";
 import { checkRankingAchievements } from "../utils/rankingAchievements";
 import { triggerConfetti } from "../utils/celebration";
+import { api } from "../services/api";
 
-export default function RankingPage({ history }) {
-  const anonymousId = localStorage.getItem("h2o_anonymous_id");
+export default function RankingPage({ user, history }) {
+  const [ranking, setRanking] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const average =
     history.length > 0
@@ -21,17 +19,44 @@ export default function RankingPage({ history }) {
         )
       : 0;
 
-  const mockUsers = [
-    { id: anonymousId, avgConsumption: average },
-    { id: "u1", avgConsumption: 168 },
-    { id: "u2", avgConsumption: 132 },
-    { id: "u3", avgConsumption: 155 },
-    { id: "u4", avgConsumption: 141 },
-    { id: "u5", avgConsumption: 149 }
-  ];
+  useEffect(() => {
+    setLoading(true);
+    api.ranking
+      .get()
+      .then((data) => {
+        const mapped = (data || []).map((e) => ({
+          id: String(e.usuarioId || e._id || e.id),
+          avgConsumption: e.avgConsumption ?? 0,
+          position: e.position,
+        }));
+        setRanking(mapped);
+      })
+      .catch(() => setRanking([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const ranking = buildRanking(mockUsers);
-  const myPosition = getUserPosition(ranking, anonymousId);
+  useEffect(() => {
+    if (!user?.id || average <= 0) return;
+    api.ranking
+      .upsert({
+        usuarioId: user.id,
+        nombre: user.nombre,
+        avgConsumption: average,
+      })
+      .then(() => {
+        api.ranking.get().then((data) => {
+          const mapped = (data || []).map((e) => ({
+            id: String(e.usuarioId || e._id || e.id),
+            avgConsumption: e.avgConsumption ?? 0,
+            position: e.position,
+          }));
+          setRanking(mapped);
+        });
+      })
+      .catch(() => {});
+  }, [user?.id, average]);
+
+  const myPosition = getUserPosition(ranking, String(user?.id));
   const campusAvg = getCampusAverage(ranking);
 
   useEffect(() => {
@@ -93,11 +118,15 @@ export default function RankingPage({ history }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Ranking
-          ranking={ranking}
-          userPosition={myPosition}
-          campusAvg={campusAvg}
-        />
+        {loading ? (
+          <p className="text-slate-500 text-center py-8">Cargando ranking…</p>
+        ) : (
+          <Ranking
+            ranking={ranking}
+            userPosition={myPosition}
+            campusAvg={campusAvg}
+          />
+        )}
       </motion.div>
     </motion.section>
   );
