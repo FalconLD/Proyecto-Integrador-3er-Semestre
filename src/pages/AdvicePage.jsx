@@ -2,39 +2,59 @@ import { useEffect, useState } from "react";
 import DiagnosisCard from "../components/DiagnosisCard";
 import AdviceCard from "../components/AdviceCard";
 import { getAdviceFromHistory } from "../utils/adviceEngine";
-import { enhanceAdviceWithAI } from "../utils/adviceAI";
+// import { enhanceAdviceWithAI } from "../utils/adviceAI"; // Comentada para deshabilitar la IA
+import Achievements from '../components/Achievements'; 
 
 const AdvicePage = ({ history }) => {
   const [diagnosis, setDiagnosis] = useState(null);
   const [adviceList, setAdviceList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [aiAdviceMap, setAiAdviceMap] = useState({}); // Guardamos la IA por consejo
 
   useEffect(() => {
     if (!history || history.length === 0) return;
 
+    // Consejos base
     const result = getAdviceFromHistory(history);
     setDiagnosis(result.diagnosis);
-    setAdviceList(result.advices);
+    setAdviceList(result.advices.map(a => ({ ...a, enhanced: false })));
 
-    // 🤖 IA (opcional, no bloquea)
+    // Mejora opcional con IA
     const enhanceAdvice = async () => {
       setLoading(true);
-
       try {
-        const enhanced = await Promise.all(
-          result.advices.map((advice) =>
-            enhanceAdviceWithAI({
-              average: result.average,
-              diagnosis: result.diagnosis,
-              advice,
-            })
-          )
-        );
+        await Promise.all(
+          result.advices.map(async (advice, index) => {
+            if (advice.enhanced) return;
 
-        setAdviceList(enhanced);
-      } catch (e) {
-        // fallback automático (ya están los consejos base)
-        console.warn("IA no disponible, usando consejos base");
+            try {
+              // Comentado para deshabilitar la llamada a la IA
+              /* const enhanced = await enhanceAdviceWithAI({
+                average: result.average,
+                diagnosis: result.diagnosis,
+                advice,
+                context: {
+                  trend: result.trend,
+                  worstDay: result.worstDay,
+                  habits: result.habits,
+                },
+              }); */
+
+              // Aquí debería actualizarse el consejo con la IA
+              // setAdviceList(prev =>
+              //   prev.map((a, i) =>
+              //     i === index ? { ...a, ...enhanced, enhanced: true } : a
+              //   )
+              // );
+
+              // Guardamos IA en el map (comentado)
+              // setAiAdviceMap(prev => ({ ...prev, [advice.id]: enhanced }));
+
+            } catch (err) {
+              console.warn(`IA no disponible para consejo ${advice.id}`, err);
+            }
+          })
+        );
       } finally {
         setLoading(false);
       }
@@ -47,18 +67,32 @@ const AdvicePage = ({ history }) => {
 
   return (
     <div className="space-y-8">
-      <DiagnosisCard diagnosis={diagnosis} />
+      {/* 🧠 Diagnóstico general */}
+      <DiagnosisCard
+        diagnosis={diagnosis}
+        isAIAdvice={false} // Deshabilitado, no hay IA
+        aiAdvice={null} // No pasamos IA
+      />
 
+      {/* 🤖 Estado IA */}
       {loading && (
         <p className="text-sm text-slate-400 italic">
           Analizando tu consumo con IA…
         </p>
       )}
 
+      {/* 🎯 Consejos */}
       <div className="grid gap-6 md:grid-cols-2">
-        {adviceList.map((advice, index) => (
-          <AdviceCard key={index} advice={advice} />
+        {adviceList.map((advice) => (
+          <AdviceCard
+            key={advice.id}
+            advice={advice} // Usamos los consejos base, no la IA
+            isAIAdvice={false} // No marcar como IA
+          />
         ))}
+      </div>
+      <div className="pt-10 border-t border-slate-100">
+        <Achievements history={history} />
       </div>
     </div>
   );
