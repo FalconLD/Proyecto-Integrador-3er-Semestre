@@ -10,6 +10,7 @@ import {
 } from "../utils/ranking";
 import { checkRankingAchievements } from "../utils/rankingAchievements";
 import { triggerConfetti } from "../utils/celebration";
+import Achievements from '../components/Achievements'; 
 
 export default function RankingPage({ history }) {
   const anonymousId = localStorage.getItem("h2o_anonymous_id");
@@ -99,6 +100,10 @@ export default function RankingPage({ history }) {
           campusAvg={campusAvg}
         />
       </motion.div>
+      <div className="pt-10 border-t border-slate-100">
+        <Achievements history={history} />
+      </div>
     </motion.section>
+
   );
 }

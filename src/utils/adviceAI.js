@@ -1,39 +1,26 @@
-export const enhanceAdviceWithAI = async ({
-  average,
-  diagnosis,
-  advice,
-}) => {
-  try {
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-small",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: `
-Usuario consume ${average} litros diarios.
-Diagnóstico: ${diagnosis.title}.
-Consejo base: ${advice.title} - ${advice.text}
+// export async function enhanceAdviceWithAI(context) {
+//   const controller = new AbortController();
+//   const timeout = setTimeout(() => controller.abort(), 15000);
 
-Redacta un consejo corto, claro y motivador (máx 2 frases).
-          `,
-        }),
-      }
-    );
+//   try {
+//     const res = await fetch("http://localhost:3001/api/ai-advice", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json"
+//       },
+//       body: JSON.stringify(context),
+//       signal: controller.signal
+//     });
 
-    const data = await response.json();
+//     const data = await res.json();
 
-    const generatedText =
-      Array.isArray(data) && data[0]?.generated_text;
+//     if (!res.ok) {
+//       throw new Error(data.error || "IA no disponible");
+//     }
 
-    return {
-      ...advice,
-      text: generatedText || advice.text,
-    };
-  } catch (error) {
-    // fallback total
-    return advice;
-  }
-};
+//     return data;
+
+//   } finally {
+//     clearTimeout(timeout);
+//   }
+// }
