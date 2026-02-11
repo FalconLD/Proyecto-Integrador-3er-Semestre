@@ -153,27 +153,96 @@ AS
 BEGIN
   SET NOCOUNT ON;
 
-  IF NOT EXISTS (SELECT 1 FROM dbo.usuarios WHERE id = @UsuarioId)
-  BEGIN
-    RAISERROR ('Usuario no existe', 16, 1);
-    RETURN;
-  END;
+  BEGIN TRY
+    BEGIN TRAN;
 
-  IF @Total < 0
-  BEGIN
-    RAISERROR ('El total no puede ser negativo', 16, 1);
-    RETURN;
-  END;
+    -- Validaciones de negocio críticas
+    IF NOT EXISTS (SELECT 1 FROM dbo.usuarios WHERE id = @UsuarioId)
+    BEGIN
+      RAISERROR ('Usuario no existe', 16, 1);
+    END;
 
-  INSERT INTO dbo.registros_diarios (usuarioId, fecha, fechaISO, total, virtualTotal, details)
-  VALUES (
-    @UsuarioId,
-    ISNULL(@Fecha, CAST(GETDATE() AS DATE)),
-    CONVERT(VARCHAR(50), SYSDATETIMEOFFSET(), 126),
-    @Total,
-    @VirtualTotal,
-    @Details
-  );
+    IF @Total < 0
+    BEGIN
+      RAISERROR ('El total no puede ser negativo', 16, 1);
+    END;
+
+    -- Inserción del registro diario
+    INSERT INTO dbo.registros_diarios (usuarioId, fecha, fechaISO, total, virtualTotal, details)
+    VALUES (
+      @UsuarioId,
+      ISNULL(@Fecha, CAST(GETDATE() AS DATE)),
+      CONVERT(VARCHAR(50), SYSDATETIMEOFFSET(), 126),
+      @Total,
+      @VirtualTotal,
+      @Details
+    );
+
+    COMMIT TRAN;
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK TRAN;
+
+    DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+    RAISERROR (@ErrorMessage, 16, 1);
+  END CATCH;
 END;
 GO
+
+--------------------------------------------------
+-- 4. VISTAS COMPLEJAS PARA REPORTES
+--------------------------------------------------
+
+-- 4.1 Vista de resumen por usuario (agregados de consumo)
+IF OBJECT_ID('dbo.vw_ResumenUsuarioH2O', 'V') IS NOT NULL
+  DROP VIEW dbo.vw_ResumenUsuarioH2O;
+GO
+
+CREATE VIEW dbo.vw_ResumenUsuarioH2O
+AS
+  SELECT
+    u.id AS UsuarioId,
+    u.nombre,
+    u.email,
+    COUNT(r.id) AS TotalRegistros,
+    ISNULL(AVG(CAST(r.total AS FLOAT)), 0) AS PromedioLitros,
+    ISNULL(MIN(r.total), 0) AS MinimoLitros,
+    ISNULL(MAX(r.total), 0) AS MaximoLitros
+  FROM dbo.usuarios u
+  LEFT JOIN dbo.registros_diarios r
+    ON r.usuarioId = u.id
+  GROUP BY u.id, u.nombre, u.email;
+GO
+
+-- 4.2 Vista de top usuarios más eficientes (bajo consumo)
+IF OBJECT_ID('dbo.vw_TopUsuariosEficientesH2O', 'V') IS NOT NULL
+  DROP VIEW dbo.vw_TopUsuariosEficientesH2O;
+GO
+
+CREATE VIEW dbo.vw_TopUsuariosEficientesH2O
+AS
+  WITH Consumos AS (
+    SELECT
+      u.id AS UsuarioId,
+      u.nombre,
+      u.email,
+      COUNT(r.id) AS TotalRegistros,
+      ISNULL(AVG(CAST(r.total AS FLOAT)), 0) AS PromedioLitros
+    FROM dbo.usuarios u
+    LEFT JOIN dbo.registros_diarios r
+      ON r.usuarioId = u.id
+    GROUP BY u.id, u.nombre, u.email
+  )
+  SELECT TOP (5)
+    UsuarioId,
+    nombre,
+    email,
+    TotalRegistros,
+    PromedioLitros
+  FROM Consumos
+  WHERE TotalRegistros > 0
+  ORDER BY PromedioLitros ASC;
+GO
+
 

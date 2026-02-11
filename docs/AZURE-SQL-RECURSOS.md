@@ -154,20 +154,169 @@ az sql server firewall-rule create `
 
 ---
 
-## 10. Plan de seguridad (resumen)
+## 10. Plan de políticas de seguridad
+
+Este plan resume las políticas que se aplican (o se deben aplicar) en la infraestructura de H2O:
+
+### 10.1 Plataforma e infraestructura
+
+- **Sistema e infraestructura**:
+  - Backend desplegado sobre entorno Node.js (Windows / Azure) consumiendo **Azure SQL Database** en `canadacentral`.
+  - Base de datos `h2o-db` en el servidor `sql-h2o-integrador-lf.database.windows.net` dentro del grupo `rg-h2o-integrador`.
+- **Aislamiento y acceso**:
+  - Acceso a SQL restringido por **firewall de servidor** (solo IPs conocidas del equipo y, opcionalmente, Azure Services).
+
+### 10.2 Control de acceso y credenciales
 
 - **Principio de mínimo privilegio**:
-  - Usar una cuenta de aplicación con permisos limitados (`db_datareader`, `db_datawriter`) y NO la cuenta de administrador para la API.
-  - Mantener las credenciales en `.env` y **no** subirlas al repositorio.
-- **Cifrado y red**:
-  - Conexiones siempre con `Encrypt=True` y `TrustServerCertificate=False` (ya configurado en `database.js`).
-  - Limitar IPs en el firewall del servidor SQL (solo tu IP + Azure Services si es necesario).
-- **Integridad de datos**:
-  - CHECKs en `usuarios.edad` y `registros_diarios.total` para evitar datos inválidos (ver `backend/sql/h2o_extras.sql`).
-  - Triggers de auditoría para registrar inserciones/eliminaciones sensibles.
-- **Auditoría**:
-  - Tabla `auditoria` en Azure SQL para registrar operaciones importantes (INSERT/DELETE de registros, cambios de usuario).
-  - Uso combinado de auditoría desde la API y desde triggers T‑SQL.
-- **Operación diaria**:
-  - Pausar bases que no se usen para evitar gasto innecesario.
-  - Revisar periódicamente los logs de auditoría y el panel admin del proyecto H2O.
+  - La API debe usar una **cuenta de aplicación** con permisos limitados (`db_datareader`, `db_datawriter`) y no la cuenta `sqladmin` para operaciones diarias.
+- **Gestión de secretos**:
+  - Credenciales almacenadas en `.env` (`backend/.env`) y excluidas del repositorio (`.gitignore`).
+  - Recomendado: migrar a **Azure Key Vault** en un despliegue productivo.
+
+### 10.3 Cifrado, red y transporte
+
+- **Conexión cifrada**:
+  - Siempre con `Encrypt=True` y `TrustServerCertificate=False` (ya configurado en `backend/src/config/database.js`).
+- **Tráfico mínimo expuesto**:
+  - Solo se exponen los puertos necesarios para la API; el acceso directo a SQL se limita a administradores.
+
+### 10.4 Integridad y validación de datos
+
+- **Restricciones en BD**:
+  - `CHECK` en `usuarios.edad` y `registros_diarios.total` para evitar edades inválidas o consumos negativos (ver `backend/sql/h2o_extras.sql`).
+  - `UNIQUE` en `usuarios.email` para evitar duplicados.
+- **Reglas de negocio en servidor**:
+  - Stored procedures como `sp_InsertRegistroSeguroH2O` validan existencia de usuario y rango de valores, ahora usando **transacciones explícitas** para garantizar consistencia.
+
+### 10.5 Auditoría y monitoreo
+
+- **Auditoría de operaciones**:
+  - Tabla `auditoria` en Azure SQL para registrar operaciones críticas (INSERT/DELETE de registros, cambios de usuario).
+  - Trigger `trg_registros_diarios_auditoria` para registrar inserciones/eliminaciones sensibles en `registros_diarios`.
+  - Auditoría adicional desde la API en controladores como `registrosController` y `usuariosController`.
+- **Monitoreo operativo**:
+  - Revisión periódica de la tabla `auditoria` y del panel admin para detectar comportamientos anómalos.
+
+### 10.6 Copias de seguridad y recuperación
+
+- **Backups automáticos**:
+  - Azure SQL realiza **copias de seguridad automáticas** de `h2o-db` (configurables en el portal).
+- **Estrategia recomendada**:
+  - Verificar periódicamente el estado de backups y el período de retención.
+  - Documentar el procedimiento de restauración (base point-in-time) y probarlo al menos una vez durante el ciclo del proyecto.
+
+### 10.7 Buenas prácticas adicionales
+
+- Mantener el backend y dependencias actualizados (`npm outdated`/`npm audit`).
+- Revisar periódicamente los permisos de las cuentas que acceden al servidor SQL.
+- Mantener revisiones de código y controles de acceso al repositorio (GitHub).
+
+---
+
+## 11. Justificación técnica del diseño de bases de datos
+
+### 11.1 Elección de Azure SQL como base transaccional principal
+
+Para el núcleo del proyecto (usuarios, registros diarios/semanales, auditoría) se eligió **Azure SQL Database** como motor relacional transaccional porque:
+
+- **Consistencia e integridad fuertes**  
+  - Soporta claves primarias/foráneas, `CHECK`, `UNIQUE`, `DEFAULT` y **transacciones ACID**, lo que es crítico para no perder ni duplicar registros de consumo de agua.
+- **Soporte nativo para lógica en BD**  
+  - Permite implementar **stored procedures** y **triggers**, que usamos para:
+    - Validar reglas de negocio (por ejemplo, `sp_InsertRegistroSeguroH2O`).
+    - Registrar auditoría sensible (`trg_registros_diarios_auditoria` y tabla `auditoria`).
+- **Escalabilidad administrada**  
+  - Azure se encarga de backups automáticos, alta disponibilidad y escalado del servicio; el equipo se enfoca en la lógica del proyecto y no en administración de servidores.
+- **Integración con el stack visto en clases**  
+  - El backend (`backend/`) usa **Express + TypeORM + mssql**, exactamente como en la clase `10.Clase_express_typeorm_postgres.html` (adaptado a Azure SQL), facilitando el aprendizaje y la trazabilidad entre clase y proyecto.
+
+En resumen, Azure SQL es la mejor opción para la parte **OLTP** (transaccional) donde se requiere integridad, seguridad y capacidad de análisis mediante SQL estándar.
+
+### 11.2 Uso complementario de MongoDB
+
+Adicionalmente se utiliza **MongoDB** (`MONGODB_URI` en `.env` y modelos como `RankingEntry`) para ciertos escenarios donde:
+
+- Se requiere **esquema flexible** para almacenar documentos de ranking o rachas sin afectar el modelo transaccional de Azure SQL.
+- El patrón de acceso es principalmente de **lectura** (consultar rankings agregados) y tolera cierta eventualidad.
+- Se quiere demostrar el uso de una **base NoSQL** complementaria, alineado a los contenidos de Bases de Datos II y la clase `13.Clase_express_mongodb.html`.
+
+De esta forma:
+
+- **Azure SQL** se encarga del dato crítico y persistente (usuarios, registros diarios, auditoría, reportes).
+- **MongoDB** se usa para **analítica ligera** y datos agregados (ranking histórico), sin poner en riesgo la consistencia del núcleo transaccional.
+
+### 11.3 Relación con requerimientos funcionales y no funcionales
+
+- **Funcionales**:
+  - Registrar y consultar consumos diarios/semanales por usuario.
+  - Calcular promedios, rankings y métricas globales (panel admin).
+  - Gestionar roles y permisos para un panel de administración.
+- **No funcionales**:
+  - **Seguridad**: conexión cifrada, auditoría, validaciones en BD, hashing de contraseñas (`passwordHash` en `usuarios`).
+  - **Escalabilidad y disponibilidad**: servicio PaaS administrado (Azure SQL), con opción de escalar verticalmente según carga.
+  - **Mantenibilidad**: modelo relacional bien definido con entidades TypeORM (`backend/src/models/*.js`), acoplado a un ORM estándar.
+
+---
+
+## 12. Modelo de datos (diagrama ER)
+
+El modelo de datos relacional implementado en Azure SQL se refleja tanto en las entidades TypeORM (`backend/src/models/*.js`) como en las tablas del servidor `sql-h2o-integrador-lf`.  
+Las entidades principales son:
+
+- `usuarios`: información de perfil, credenciales y permisos.
+- `registros_diarios`: consumos diarios de agua por usuario.
+- `registros_semanales`: agregados semanales (para análisis de tendencias).
+- `auditoria`: operaciones sensibles registradas (INSERT/DELETE, cambios relevantes).
+- `rachas` / `ranking` (en combinación con MongoDB) para métricas avanzadas.
+
+Un posible diagrama ER simplificado es:
+
+```mermaid
+erDiagram
+  USUARIOS {
+    int id PK
+    nvarchar nombre
+    nvarchar email
+    int edad
+    nvarchar avatar_url
+    bit modo_oscuro
+    nvarchar passwordHash
+    nvarchar role
+    nvarchar permisos
+  }
+
+  REGISTROS_DIARIOS {
+    int id PK
+    int usuarioId FK
+    date fecha
+    nvarchar fechaISO
+    int total
+    int virtualTotal
+    nvarchar details
+  }
+
+  REGISTROS_SEMANALES {
+    int id PK
+    int usuarioId FK
+    date fechaInicio
+    date fechaFin
+    int total
+  }
+
+  AUDITORIA {
+    int id PK
+    int usuarioId
+    nvarchar entidad
+    nvarchar operacion
+    nvarchar detalle
+    datetime fecha
+  }
+
+  USUARIOS ||--o{ REGISTROS_DIARIOS : registra
+  USUARIOS ||--o{ REGISTROS_SEMANALES : resume
+  USUARIOS ||--o{ AUDITORIA : genera
+```
+
+Este diagrama puede exportarse como imagen (por ejemplo desde VS Code o un editor de Markdown con soporte Mermaid) e incluirse en la documentación formal del proyecto (Confluence o informe en PDF), cumpliendo así el requisito de la rúbrica respecto al **modelo de datos y sus claves/relaciones**.
+
