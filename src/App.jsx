@@ -4,8 +4,9 @@ import { motion } from 'framer-motion';
 import Dashboard from './components/Dashboard';
 import Achievements from './components/Achievements';
 import WelcomeScreen from './components/WelcomeScreen';
-import InfoSection from './components/InfoSection'; 
-import StepForm from './components/StepForm'; 
+import InfoSection from './components/InfoSection';
+import StepForm from './components/StepForm';
+import SettingsPanel from './components/SettingsPanel';
 
 import {
   Settings,
@@ -13,85 +14,151 @@ import {
   LayoutDashboard,
   Droplet,
   BarChart3,
-  Trophy
+  Trophy,
+  Shield,
 } from 'lucide-react';
 
 import { Toaster, toast } from 'sonner';
+import { api } from './services/api';
+import { useAuth } from './context/AuthContext';
 
 // Pages
 import ProgressPage from './pages/ProgressPage';
 import RankingPage from './pages/RankingPage';
+import AdminPage from './pages/AdminPage';
 
 function App() {
-  // 🆔 ID ANÓNIMO (ranking)
+  const { user, updateUser, logout, puedeVerPanelAdmin } = useAuth();
+
   useEffect(() => {
     if (!localStorage.getItem('h2o_anonymous_id')) {
       localStorage.setItem('h2o_anonymous_id', crypto.randomUUID());
     }
   }, []);
 
-  // 1. PERFIL DEL USUARIO
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('h2o_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Sincronizar usuario invitado antiguo (sin id) con API
+  useEffect(() => {
+    if (!user?.email || user.id) return;
+    const email = user.email.endsWith('@puce.edu.ec') ? user.email : `${user.email}@puce.edu.ec`;
+    api.usuarios.getByEmail(email)
+      .then((u) => {
+        const full = { ...user, id: u.id, role: u.role || 'user', permisos: u.permisos || [] };
+        updateUser(full);
+      })
+      .catch(() => {});
+  }, [user?.email, user?.id]);
 
-  // 2. HISTORIAL
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem('h2o_history');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 3. NAVEGACIÓN
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('h2o_theme');
+    return saved ? saved === 'dark' : false;
+  });
 
-  // 4. GUARDAR REGISTRO
-  const saveRecord = (record) => {
-    const newHistory = [record, ...history].sort(
-      (a, b) => new Date(b.fechaISO) - new Date(a.fechaISO)
-    );
+  // Cargar historial cuando hay usuario con id
+  useEffect(() => {
+    if (!user?.id) return;
+    setLoadingHistory(true);
+    api.registros.getByUsuario(user.id)
+      .then((data) => setHistory(data))
+      .catch(() => setHistory([]))
+      .finally(() => setLoadingHistory(false));
+  }, [user?.id]);
 
-    setHistory(newHistory);
-    localStorage.setItem('h2o_history', JSON.stringify(newHistory));
 
-    toast.info('Registro guardado correctamente', {
-      description: `Consumo total calculado: ${record.total} Litros.`,
-    });
-
-    setIsFormOpen(false);
+  const saveRecord = async (record) => {
+    if (!user?.id) return;
+    try {
+      await api.registros.create({
+        usuarioId: user.id,
+        fecha: record.fecha,
+        fechaISO: record.fechaISO,
+        total: record.total,
+        virtualTotal: record.virtualTotal,
+        details: record.details,
+      });
+      setHistory((prev) => [record, ...prev].sort((a, b) => new Date(b.fechaISO) - new Date(a.fechaISO)));
+      toast.info('Registro guardado correctamente', { description: `Consumo total: ${record.total} Litros.` });
+      setIsFormOpen(false);
+    } catch (err) {
+      toast.error('Error al guardar', { description: err.message });
+    }
   };
 
-  // 5. RESET
   const handleLogout = () => {
-    if (
-      confirm(
-        '¿Estás seguro de resetear todos tus datos? Se borrará el perfil de la PUCE y el historial.'
-      )
-    ) {
-      localStorage.clear();
+    if (confirm('¿Estás seguro de cerrar sesión?')) {
+      logout();
       window.location.reload();
     }
   };
 
-  // 🌱 BIENVENIDA
+  const handleClearHistory = () => {
+    if (
+      confirm(
+        'Esto borrará únicamente el historial guardado en este navegador. ¿Continuar?'
+      )
+    ) {
+      localStorage.removeItem('h2o_history');
+      setHistory([]);
+      toast.info('Historial local borrado correctamente');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (
+      !user?.id ||
+      !confirm(
+        'Esta acción eliminará tu usuario y registros de la base de datos. ¿Estás seguro?'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.usuarios.delete(user.id);
+      logout();
+      toast.success('Cuenta eliminada correctamente');
+      window.location.reload();
+    } catch (err) {
+      toast.error('No se pudo eliminar la cuenta', {
+        description: err.message,
+      });
+    }
+  };
+
+  const toggleTheme = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem('h2o_theme', next ? 'dark' : 'light');
+  };
+
+  const handleUpdateProfile = async (changes) => {
+    if (!user?.id) return;
+    try {
+      const updated = await api.usuarios.update(user.id, changes);
+      updateUser(updated);
+      toast.success('Perfil actualizado correctamente');
+    } catch (err) {
+      toast.error('No se pudo actualizar el perfil', {
+        description: err.message,
+      });
+    }
+  };
+
   if (!user) {
-    return (
-      <WelcomeScreen
-        onComplete={(data) => {
-          localStorage.setItem('h2o_user', JSON.stringify(data));
-          setUser(data);
-        }}
-      />
-    );
+    return <WelcomeScreen />;
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-10">
+    <div className={`${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'} min-h-screen`}>
+      <div className="max-w-6xl mx-auto p-4 md:p-10">
       <Toaster position="top-center" richColors closeButton />
 
       {/* NAVBAR */}
-      <nav className="flex justify-between items-center mb-10 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+      <nav className={`flex justify-between items-center mb-10 p-4 rounded-2xl shadow-sm border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-200">
             WM
@@ -154,6 +221,24 @@ function App() {
             <Trophy size={20} />
           </button>
 
+          {/* ADMIN - solo visible con permiso */}
+          {puedeVerPanelAdmin() && (
+            <button
+              onClick={() => {
+                setActiveTab('admin');
+                setIsFormOpen(false);
+              }}
+              className={`p-2 rounded-lg transition-all ${
+                activeTab === 'admin'
+                  ? 'bg-blue-50 text-blue-600 shadow-inner'
+                  : 'text-slate-400 hover:bg-slate-50'
+              }`}
+              title="Panel administrador"
+            >
+              <Shield size={20} />
+            </button>
+          )}
+
           {/* INFO */}
           <button
             onClick={() => {
@@ -169,11 +254,11 @@ function App() {
             <Info size={20} />
           </button>
 
-          {/* RESET */}
+          {/* CONFIGURACIÓN */}
           <button
-            onClick={handleLogout}
-            className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-all"
-            title="Resetear aplicación"
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 text-slate-300 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-all"
+            title="Configuración"
           >
             <Settings size={20} />
           </button>
@@ -220,11 +305,15 @@ function App() {
         )}
 
         {activeTab === 'progress' && (
-          <ProgressPage history={history} />
+          <ProgressPage user={user} history={history} />
         )}
 
         {activeTab === 'ranking' && (
-          <RankingPage history={history} />
+          <RankingPage user={user} history={history} />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminPage />
         )}
 
         {activeTab === 'info' && (
@@ -232,11 +321,25 @@ function App() {
         )}
       </main>
 
-      <footer className="mt-20 pt-10 border-t border-slate-100 text-center">
-        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+      <footer className={`mt-20 pt-10 border-t text-center ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
           WaterMarker • Proyecto Integrador PUCE 2026
         </p>
       </footer>
+      </div>
+
+      {isSettingsOpen && (
+        <SettingsPanel
+          user={user}
+          darkMode={darkMode}
+          onUpdateProfile={handleUpdateProfile}
+          onToggleTheme={toggleTheme}
+          onClearHistory={handleClearHistory}
+          onLogout={handleLogout}
+          onDeleteAccount={handleDeleteAccount}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }
