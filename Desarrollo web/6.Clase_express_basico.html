@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    PUCETEC - Clase: Express.js Básico
+  </title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Clase: Express.js Básico</h1>
+      <p class="lead">Material de apoyo para estudiantes — desarrollo web.</p>
+    </header>
+
+    <section class="card">
+      <span class="badge">Objetivo</span>
+      <p>
+        Aprender a crear servidores web con Express.js, entender qué son las rutas, cómo manejar peticiones HTTP,
+        trabajar con middleware, y crear tu primera API básica. Express.js es el framework más popular para crear
+        aplicaciones backend con Node.js.
+      </p>
+    </section>
+
+    <!-- ¿Qué es Express.js? -->
+    <section class="card">
+      <h2>🚀 ¿Qué es Express.js?</h2>
+      <p class="muted">
+        Express.js es un framework web minimalista y flexible para Node.js que proporciona un conjunto robusto de
+        características para desarrollar aplicaciones web y APIs.
+      </p>
+
+      <h3>Características principales</h3>
+      <ul>
+        <li><strong>Minimalista:</strong> Framework ligero sin muchas abstracciones</li>
+        <li><strong>Flexible:</strong> Puedes agregar solo lo que necesitas</li>
+        <li><strong>Rápido:</strong> Optimizado para alto rendimiento</li>
+        <li><strong>Popular:</strong> El framework más usado en Node.js</li>
+        <li><strong>Middleware:</strong> Sistema potente de middleware para manejar peticiones</li>
+        <li><strong>Rutas:</strong> Sistema de enrutamiento simple y expresivo</li>
+      </ul>
+
+      <h3>¿Por qué usar Express.js?</h3>
+      <p>Comparado con el módulo <code>http</code> nativo de Node.js:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Aspecto</th>
+            <th>Módulo http</th>
+            <th>Express.js</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Configuración</strong></td>
+            <td>Más código manual</td>
+            <td>Configuración simple</td>
+          </tr>
+          <tr>
+            <td><strong>Rutas</strong></td>
+            <td>Manejo manual con if/else</td>
+            <td>Sistema de rutas integrado</td>
+          </tr>
+          <tr>
+            <td><strong>Middleware</strong></td>
+            <td>No disponible</td>
+            <td>Sistema completo de middleware</td>
+          </tr>
+          <tr>
+            <td><strong>JSON</strong></td>
+            <td>Parseo manual</td>
+            <td>Parseo automático</td>
+          </tr>
+          <tr>
+            <td><strong>Comunidad</strong></td>
+            <td>Limitada</td>
+            <td>Ecosistema enorme</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>¿Para qué se usa Express.js?</h3>
+      <ul>
+        <li>Crear APIs RESTful</li>
+        <li>Desarrollar aplicaciones web del lado del servidor</li>
+        <li>Crear servidores para aplicaciones SPA (Single Page Applications)</li>
+        <li>Desarrollar microservicios</li>
+        <li>Crear backends para aplicaciones móviles</li>
+      </ul>
+    </section>
+
+    <!-- Instalación -->
+    <section class="card">
+      <h2>📦 Instalación de Express.js</h2>
+      <p class="muted">
+        Express.js se instala como un paquete de npm. Ya lo instalaste en la clase anterior, pero aquí está el proceso
+        completo.
+      </p>
+
+      <h3>Paso 1: Crear un proyecto</h3>
+      <pre><code>mkdir mi-servidor-express
+cd mi-servidor-express
+npm init -y</code></pre>
+
+      <h3>Paso 2: Instalar Express</h3>
+      <pre><code>npm install express</code></pre>
+      <p>Esto instalará Express y lo agregará a tu <code>package.json</code> en <code>dependencies</code>.</p>
+
+      <h3>Paso 3: Verificar la instalación</h3>
+      <p>Verifica que Express se instaló correctamente:</p>
+      <pre><code>npm list express</code></pre>
+      <p>Deberías ver la versión instalada (ej: <code>express@4.18.2</code>)</p>
+    </section>
+
+    <!-- Primer servidor -->
+    <section class="card">
+      <h2>🌐 Tu Primer Servidor con Express</h2>
+      <p class="muted">
+        Vamos a crear un servidor básico paso a paso.
+      </p>
+
+      <h3>Servidor básico</h3>
+      <p>Crea un archivo <code>index.js</code>:</p>
+      <pre><code>// Importar Express
+const express = require('express');
+
+// Crear una aplicación Express
+const app = express();
+
+// Definir el puerto
+const PORT = 3000;
+
+// Crear una ruta básica
+app.get('/', (req, res) => {
+  res.send('¡Hola desde Express.js!');
+});
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});</code></pre>
+
+      <h3>Ejecutar el servidor</h3>
+      <pre><code>node index.js</code></pre>
+      <p>Deberías ver: <code>Servidor corriendo en http://localhost:3000</code></p>
+
+      <h3>Probar el servidor</h3>
+      <p>Abre tu navegador y ve a <code>http://localhost:3000</code>. Deberías ver el mensaje "¡Hola desde Express.js!"</p>
+
+      <div class="tip">
+        <p><strong>💡 Tip:</strong> Para detener el servidor, presiona <kbd>Ctrl + C</kbd> en la terminal.</p>
+      </div>
+    </section>
+
+    <!-- Rutas -->
+    <section class="card">
+      <h2>🛣️ Rutas (Routes)</h2>
+      <p class="muted">
+        Las rutas definen cómo tu aplicación responde a peticiones del cliente a un endpoint específico (URI) y un
+        método HTTP específico (GET, POST, etc.).
+      </p>
+
+      <h3>Métodos HTTP básicos</h3>
+      <ul>
+        <li><strong>GET:</strong> Obtener datos (leer)</li>
+        <li><strong>POST:</strong> Crear nuevos datos</li>
+        <li><strong>PUT:</strong> Actualizar datos existentes</li>
+        <li><strong>DELETE:</strong> Eliminar datos</li>
+      </ul>
+
+      <h3>Rutas básicas</h3>
+      <pre><code>const express = require('express');
+const app = express();
+
+// Ruta GET - Obtener datos
+app.get('/', (req, res) => {
+  res.send('Página principal');
+});
+
+app.get('/about', (req, res) => {
+  res.send('Acerca de nosotros');
+});
+
+// Ruta POST - Crear datos
+app.post('/usuarios', (req, res) => {
+  res.send('Usuario creado');
+});
+
+// Ruta PUT - Actualizar datos
+app.put('/usuarios/:id', (req, res) => {
+  res.send(`Actualizar usuario ${req.params.id}`);
+});
+
+// Ruta DELETE - Eliminar datos
+app.delete('/usuarios/:id', (req, res) => {
+  res.send(`Eliminar usuario ${req.params.id}`);
+});
+
+app.listen(3000, () => {
+  console.log('Servidor en http://localhost:3000');
+});</code></pre>
+
+      <h3>Rutas con parámetros</h3>
+      <p>Puedes capturar valores de la URL usando <code>:nombreParametro</code>:</p>
+      <pre><code>// Obtener un usuario por ID
+app.get('/usuarios/:id', (req, res) => {
+  const userId = req.params.id;
+  res.send(`Usuario ID: ${userId}`);
+});
+
+// Múltiples parámetros
+app.get('/usuarios/:userId/posts/:postId', (req, res) => {
+  const { userId, postId } = req.params;
+  res.send(`Usuario ${userId}, Post ${postId}`);
+});
+
+// Ejemplos de URLs:
+// GET /usuarios/123 → "Usuario ID: 123"
+// GET /usuarios/5/posts/10 → "Usuario 5, Post 10"</code></pre>
+
+      <h3>Query Parameters</h3>
+      <p>Los query parameters son valores que vienen después de <code>?</code> en la URL:</p>
+      <pre><code>// URL: /buscar?q=express&tipo=framework
+app.get('/buscar', (req, res) => {
+  const query = req.query.q;        // "express"
+  const tipo = req.query.tipo;      // "framework"
+  
+  res.send(`Buscando: ${query}, Tipo: ${tipo}`);
+});
+
+// También puedes acceder a todo el objeto query
+app.get('/productos', (req, res) => {
+  console.log(req.query);
+  // Si la URL es: /productos?categoria=electronica&precio=100
+  // req.query será: { categoria: 'electronica', precio: '100' }
+  res.json(req.query);
+});</code></pre>
+
+      <h3>Múltiples rutas para el mismo endpoint</h3>
+      <pre><code>// Diferentes métodos para el mismo endpoint
+app.get('/api/usuarios', (req, res) => {
+  res.send('Obtener todos los usuarios');
+});
+
+app.post('/api/usuarios', (req, res) => {
+  res.send('Crear un nuevo usuario');
+});
+
+app.put('/api/usuarios', (req, res) => {
+  res.send('Actualizar usuarios');
+});
+
+app.delete('/api/usuarios', (req, res) => {
+  res.send('Eliminar usuarios');
+});</code></pre>
+    </section>
+
+    <!-- Request y Response -->
+    <section class="card">
+      <h2>📨 Request y Response</h2>
+      <p class="muted">
+        Express proporciona objetos <code>req</code> (request) y <code>res</code> (response) que contienen información
+        sobre la petición y permiten enviar respuestas.
+      </p>
+
+      <h3>Objeto Request (req)</h3>
+      <p>Contiene información sobre la petición HTTP:</p>
+      <pre><code>app.get('/ejemplo', (req, res) => {
+  // Parámetros de la URL
+  console.log(req.params);      // { id: '123' } si la ruta es /ejemplo/:id
+  
+  // Query parameters
+  console.log(req.query);       // { nombre: 'valor' } de ?nombre=valor
+  
+  // Cuerpo de la petición (necesita middleware)
+  console.log(req.body);        // Datos enviados en POST/PUT
+  
+  // Headers
+  console.log(req.headers);      // Todos los headers
+  console.log(req.get('Content-Type')); // Header específico
+  
+  // Método HTTP
+  console.log(req.method);       // 'GET', 'POST', etc.
+  
+  // URL completa
+  console.log(req.url);          // '/ejemplo?param=value'
+  console.log(req.path);         // '/ejemplo'
+  
+  res.send('Revisa la consola');
+});</code></pre>
+
+      <h3>Objeto Response (res)</h3>
+      <p>Métodos para enviar respuestas:</p>
+      <pre><code>app.get('/respuestas', (req, res) => {
+  // Enviar texto plano
+  res.send('Texto simple');
+  
+  // Enviar JSON
+  res.json({ mensaje: 'Hola', estado: 'ok' });
+  
+  // Enviar con código de estado
+  res.status(404).send('No encontrado');
+  res.status(201).json({ id: 1, nombre: 'Usuario' });
+  
+  // Enviar HTML
+  res.send('&lt;h1&gt;Título&lt;/h1&gt;&lt;p&gt;Párrafo&lt;/p&gt;');
+  
+  // Redirigir
+  res.redirect('/otra-ruta');
+  
+  // Enviar archivo
+  // res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});</code></pre>
+
+      <h3>Códigos de estado HTTP comunes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Significado</th>
+            <th>Uso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>200</td>
+            <td>OK</td>
+            <td>Petición exitosa</td>
+          </tr>
+          <tr>
+            <td>201</td>
+            <td>Created</td>
+            <td>Recurso creado exitosamente</td>
+          </tr>
+          <tr>
+            <td>400</td>
+            <td>Bad Request</td>
+            <td>Error en la petición del cliente</td>
+          </tr>
+          <tr>
+            <td>404</td>
+            <td>Not Found</td>
+            <td>Recurso no encontrado</td>
+          </tr>
+          <tr>
+            <td>500</td>
+            <td>Internal Server Error</td>
+            <td>Error en el servidor</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Middleware -->
+    <section class="card">
+      <h2>⚙️ Middleware</h2>
+      <p class="muted">
+        El middleware son funciones que tienen acceso al objeto de petición (req), al objeto de respuesta (res), y a la
+        siguiente función de middleware en el ciclo de petición/respuesta de la aplicación.
+      </p>
+
+      <h3>¿Qué es middleware?</h3>
+      <p>El middleware puede:</p>
+      <ul>
+        <li>Ejecutar código</li>
+        <li>Modificar los objetos req y res</li>
+        <li>Terminar el ciclo de petición/respuesta</li>
+        <li>Llamar a la siguiente función de middleware</li>
+      </ul>
+
+      <h3>Middleware incorporado: express.json()</h3>
+      <p>Permite que Express parsee el cuerpo de las peticiones en formato JSON:</p>
+      <pre><code>const express = require('express');
+const app = express();
+
+// Middleware para parsear JSON
+app.use(express.json());
+
+// Ahora puedes recibir JSON en el body
+app.post('/usuarios', (req, res) => {
+  console.log(req.body);  // Objeto JavaScript parseado
+  const { nombre, email } = req.body;
+  res.json({ mensaje: 'Usuario recibido', datos: req.body });
+});
+
+// Ejemplo de petición POST con JSON:
+// {
+//   "nombre": "Juan",
+//   "email": "juan@example.com"
+// }</code></pre>
+
+      <h3>Middleware incorporado: express.static()</h3>
+      <p>Sirve archivos estáticos (HTML, CSS, imágenes, etc.):</p>
+      <pre><code>const express = require('express');
+const path = require('path');
+const app = express();
+
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static('public'));
+
+// Ahora puedes acceder a:
+// http://localhost:3000/index.html
+// http://localhost:3000/style.css
+// http://localhost:3000/imagen.jpg
+
+// Si los archivos están en otra carpeta:
+app.use(express.static(path.join(__dirname, 'assets')));</code></pre>
+
+      <h3>Middleware personalizado</h3>
+      <p>Puedes crear tu propio middleware:</p>
+      <pre><code>const express = require('express');
+const app = express();
+
+// Middleware personalizado - se ejecuta en cada petición
+app.use((req, res, next) => {
+  console.log(`Petición: ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next(); // Continúa con la siguiente función
+});
+
+// Middleware con ruta específica
+app.use('/api', (req, res, next) => {
+  console.log('Accediendo a la API');
+  next();
+});
+
+// Middleware que modifica la respuesta
+app.use((req, res, next) => {
+  // Agregar un header personalizado
+  res.setHeader('X-Custom-Header', 'Mi-Valor');
+  next();
+});
+
+app.get('/', (req, res) => {
+  res.send('Página principal');
+});</code></pre>
+
+      <h3>Orden del middleware</h3>
+      <p><strong>Importante:</strong> El orden en que defines el middleware importa. Se ejecutan en el orden en que se
+        definen:</p>
+      <pre><code>app.use(express.json());        // 1. Primero parsea JSON
+app.use(express.static('public')); // 2. Luego sirve archivos estáticos
+app.use((req, res, next) => {     // 3. Luego tu middleware personalizado
+  console.log('Middleware personalizado');
+  next();
+});
+
+app.get('/', (req, res) => {       // 4. Finalmente las rutas
+  res.send('Hola');
+});</code></pre>
+    </section>
+
+    <!-- Ejemplo práctico completo -->
+    <section class="card">
+      <h2>🎯 Ejemplo Práctico Completo</h2>
+      <p class="muted">
+        Vamos a crear una API simple para gestionar una lista de tareas (To-Do List).
+      </p>
+
+      <h3>Estructura del proyecto</h3>
+      <pre><code>todo-api/
+├── package.json
+├── index.js
+└── data/
+    └── todos.json</code></pre>
+
+      <h3>Código completo</h3>
+      <pre><code>const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const app = express();
+const PORT = 3000;
+
+// Middleware
+app.use(express.json());
+
+// Ruta para obtener todos los todos
+app.get('/api/todos', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'data', 'todos.json'), 'utf8');
+    const todos = JSON.parse(data);
+    res.json(todos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al leer los todos' });
+  }
+});
+
+// Ruta para obtener un todo por ID
+app.get('/api/todos/:id', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'data', 'todos.json'), 'utf8');
+    const todos = JSON.parse(data);
+    const todo = todos.find(t => t.id === parseInt(req.params.id));
+    
+    if (todo) {
+      res.json(todo);
+    } else {
+      res.status(404).json({ error: 'Todo no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al leer los todos' });
+  }
+});
+
+// Ruta para crear un nuevo todo
+app.post('/api/todos', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'data', 'todos.json'), 'utf8');
+    const todos = JSON.parse(data);
+    
+    const newTodo = {
+      id: todos.length + 1,
+      titulo: req.body.titulo,
+      completado: false
+    };
+    
+    todos.push(newTodo);
+    fs.writeFileSync(
+      path.join(__dirname, 'data', 'todos.json'),
+      JSON.stringify(todos, null, 2)
+    );
+    
+    res.status(201).json(newTodo);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al crear el todo' });
+  }
+});
+
+// Ruta para actualizar un todo
+app.put('/api/todos/:id', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'data', 'todos.json'), 'utf8');
+    const todos = JSON.parse(data);
+    const index = todos.findIndex(t => t.id === parseInt(req.params.id));
+    
+    if (index !== -1) {
+      todos[index] = { ...todos[index], ...req.body };
+      fs.writeFileSync(
+        path.join(__dirname, 'data', 'todos.json'),
+        JSON.stringify(todos, null, 2)
+      );
+      res.json(todos[index]);
+    } else {
+      res.status(404).json({ error: 'Todo no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar el todo' });
+  }
+});
+
+// Ruta para eliminar un todo
+app.delete('/api/todos/:id', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'data', 'todos.json'), 'utf8');
+    const todos = JSON.parse(data);
+    const filteredTodos = todos.filter(t => t.id !== parseInt(req.params.id));
+    
+    if (filteredTodos.length < todos.length) {
+      fs.writeFileSync(
+        path.join(__dirname, 'data', 'todos.json'),
+        JSON.stringify(filteredTodos, null, 2)
+      );
+      res.json({ mensaje: 'Todo eliminado' });
+    } else {
+      res.status(404).json({ error: 'Todo no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el todo' });
+  }
+});
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});</code></pre>
+
+      <h3>Archivo de datos inicial: data/todos.json</h3>
+      <pre><code>[
+  {
+    "id": 1,
+    "titulo": "Aprender Express.js",
+    "completado": false
+  },
+  {
+    "id": 2,
+    "titulo": "Crear una API",
+    "completado": false
+  }
+]</code></pre>
+
+      <h3>Probar la API</h3>
+      <p>Puedes probar las rutas con:</p>
+      <ul>
+        <li><strong>Navegador:</strong> <code>http://localhost:3000/api/todos</code> (solo GET)</li>
+        <li><strong>Postman:</strong> Para probar POST, PUT, DELETE</li>
+        <li><strong>curl:</strong> Desde la terminal</li>
+      </ul>
+
+      <h3>Ejemplos con curl</h3>
+      <pre><code># GET - Obtener todos los todos
+curl http://localhost:3000/api/todos
+
+# GET - Obtener un todo por ID
+curl http://localhost:3000/api/todos/1
+
+# POST - Crear un nuevo todo
+curl -X POST http://localhost:3000/api/todos \
+  -H "Content-Type: application/json" \
+  -d '{"titulo": "Nueva tarea"}'
+
+# PUT - Actualizar un todo
+curl -X PUT http://localhost:3000/api/todos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"completado": true}'
+
+# DELETE - Eliminar un todo
+curl -X DELETE http://localhost:3000/api/todos/1</code></pre>
+    </section>
+
+    <!-- Organización de código -->
+    <section class="card">
+      <h2>📁 Organización de Código</h2>
+      <p class="muted">
+        A medida que tu aplicación crece, es importante organizar el código en módulos separados.
+      </p>
+
+      <h3>Separar rutas en archivos</h3>
+      <p>Crea un archivo <code>routes/todos.js</code>:</p>
+      <pre><code>// routes/todos.js
+const express = require('express');
+const router = express.Router();
+
+router.get('/', (req, res) => {
+  res.json({ mensaje: 'Obtener todos los todos' });
+});
+
+router.get('/:id', (req, res) => {
+  res.json({ mensaje: `Obtener todo ${req.params.id}` });
+});
+
+router.post('/', (req, res) => {
+  res.json({ mensaje: 'Crear todo' });
+});
+
+module.exports = router;</code></pre>
+
+      <p>En tu <code>index.js</code>:</p>
+      <pre><code>const express = require('express');
+const todosRouter = require('./routes/todos');
+
+const app = express();
+app.use(express.json());
+
+// Usar las rutas
+app.use('/api/todos', todosRouter);
+
+app.listen(3000, () => {
+  console.log('Servidor en http://localhost:3000');
+});</code></pre>
+
+      <h3>Estructura recomendada para proyectos grandes</h3>
+      <pre><code>mi-proyecto/
+├── package.json
+├── index.js              (punto de entrada)
+├── routes/
+│   ├── todos.js
+│   ├── usuarios.js
+│   └── productos.js
+├── controllers/
+│   ├── todosController.js
+│   └── usuariosController.js
+├── models/
+│   └── Todo.js
+├── middleware/
+│   └── auth.js
+└── data/
+    └── todos.json</code></pre>
+    </section>
+
+    <!-- Preguntas / mini desafío -->
+    <section class="card">
+      <h2>❓ Preguntas / Mini desafío</h2>
+
+      <details>
+        <summary>¿Cuál es la diferencia entre <code>res.send()</code> y <code>res.json()</code>?</summary>
+        <p><code>res.send()</code> puede enviar diferentes tipos de contenido (texto, HTML, JSON) y Express determina
+          el Content-Type automáticamente. <code>res.json()</code> es específico para JSON y establece el Content-Type
+          como <code>application/json</code>. Para APIs, es mejor usar <code>res.json()</code>.</p>
+      </details>
+
+      <details>
+        <summary>¿Qué es middleware y por qué es importante?</summary>
+        <p>El middleware son funciones que se ejecutan entre la recepción de una petición y el envío de una respuesta.
+          Permiten procesar datos, validar información, agregar headers, y más. Es importante porque permite reutilizar
+          lógica común en múltiples rutas.</p>
+      </details>
+
+      <details>
+        <summary>¿Cuál es la diferencia entre <code>req.params</code> y <code>req.query</code>?</summary>
+        <p><code>req.params</code> contiene los parámetros de ruta (ej: <code>/usuarios/:id</code> → <code>req.params.id</code>).
+          <code>req.query</code> contiene los query parameters de la URL (ej: <code>?nombre=valor</code> →
+          <code>req.query.nombre</code>).
+        </p>
+      </details>
+
+      <details>
+        <summary>¿Por qué necesito <code>express.json()</code> para recibir datos JSON?</summary>
+        <p>Por defecto, Express no parsea el cuerpo de las peticiones. <code>express.json()</code> es un middleware
+          que convierte el cuerpo de la petición (que viene como string) en un objeto JavaScript que puedes usar en
+          <code>req.body</code>.
+        </p>
+      </details>
+
+      <details>
+        <summary>¿Qué hace <code>next()</code> en un middleware?</summary>
+        <p><code>next()</code> le dice a Express que continúe con el siguiente middleware o ruta en la cadena. Si no
+          llamas <code>next()</code>, la petición se quedará "colgada" y nunca llegará a las rutas.</p>
+      </details>
+
+      <h3>🎯 Mini desafío final</h3>
+      <div class="tip">
+        <p><strong>Desafío - API de Productos:</strong> Crea una API simple para gestionar productos con las siguientes
+          rutas:</p>
+        <ol>
+          <li><strong>GET /api/productos</strong> - Obtener todos los productos</li>
+          <li><strong>GET /api/productos/:id</strong> - Obtener un producto por ID</li>
+          <li><strong>POST /api/productos</strong> - Crear un nuevo producto (recibe: nombre, precio, stock)</li>
+          <li><strong>PUT /api/productos/:id</strong> - Actualizar un producto</li>
+          <li><strong>DELETE /api/productos/:id</strong> - Eliminar un producto</li>
+        </ol>
+        <p><strong>Requisitos:</strong></p>
+        <ul>
+          <li>Usa Express.js</li>
+          <li>Guarda los datos en un archivo JSON (<code>data/productos.json</code>)</li>
+          <li>Usa <code>express.json()</code> para parsear el body</li>
+          <li>Maneja errores apropiadamente (404 si no existe, 500 para errores del servidor)</li>
+          <li>Crea al menos 3 productos de ejemplo</li>
+        </ul>
+        <p><em>💡 Tip: Usa los módulos <code>fs</code> y <code>path</code> que aprendiste en la clase anterior. Prueba
+            tu API con Postman o curl.</em></p>
+      </div>
+    </section>
+
+    <footer>
+      <p class="muted">
+        <strong>Facultad:</strong> Pucetec<br>
+        <strong>Carrera:</strong> Desarrollo de Software<br>
+        <strong>Materia:</strong> Desarrollo Web<br>
+        <strong>Docente:</strong> Fabián Aguirre
+      </p>
+    </footer>
+  </div>
+</body>
+
+</html>

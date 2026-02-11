@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    PUCETEC - Clase: Express Avanzado + TypeORM + PostgreSQL
+  </title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Clase: Express Avanzado + TypeORM + PostgreSQL</h1>
+      <p class="lead">Arquitectura limpia, bases de datos reales y código profesional — desarrollo backend.</p>
+    </header>
+
+    <section class="card">
+      <span class="badge">Objetivo</span>
+      <p>
+        Aprender a estructurar aplicaciones Express de forma profesional, integrar TypeORM para trabajar con bases de
+        datos, y conectar con PostgreSQL. Migrar tu API de heladería de archivos JSON a una base de datos real con una
+        arquitectura limpia y escalable.
+      </p>
+    </section>
+
+    <!-- Arquitectura limpia -->
+    <section class="card">
+      <h2>🏗️ Arquitectura Limpia en Express</h2>
+      <p class="muted">
+        Organizar el código de forma profesional hace que la aplicación sea más fácil de mantener, escalar y trabajar en
+        equipo.
+      </p>
+
+      <h3>Estructura de carpetas recomendada</h3>
+      <pre><code>ice-cream-shop-back/
+├── src/
+│   ├── config/              # Configuraciones
+│   │   └── database.js      # Configuración de base de datos
+│   ├── models/              # Modelos de datos (TypeORM)
+│   │   └── Sabor.js
+│   ├── controllers/        # Lógica de negocio
+│   │   └── saboresController.js
+│   ├── routes/              # Definición de rutas
+│   │   └── saboresRoutes.js
+│   ├── middleware/          # Middlewares personalizados
+│   │   └── errorHandler.js
+│   ├── utils/               # Utilidades
+│   │   └── validaciones.js
+│   └── server.js           # Punto de entrada
+├── .env                     # Variables de entorno
+├── .env.example            # Ejemplo de variables de entorno
+├── package.json
+└── README.md</code></pre>
+
+      <h3>¿Por qué esta estructura?</h3>
+      <ul>
+        <li><strong>Separation of Concerns:</strong> Cada carpeta tiene una responsabilidad específica</li>
+        <li><strong>Escalabilidad:</strong> Fácil agregar nuevas funcionalidades</li>
+        <li><strong>Mantenibilidad:</strong> Fácil encontrar y modificar código</li>
+        <li><strong>Testing:</strong> Más fácil testear componentes aislados</li>
+        <li><strong>Colaboración:</strong> Diferentes desarrolladores pueden trabajar en diferentes partes</li>
+      </ul>
+    </section>
+
+    <!-- Instalación -->
+    <section class="card">
+      <h2>📦 Instalación de Dependencias</h2>
+      <p class="muted">
+        Primero necesitas instalar todas las dependencias necesarias para el proyecto.
+      </p>
+
+      <h3>Inicializar el proyecto</h3>
+      <pre><code># Crear carpeta del proyecto
+mkdir ice-cream-shop-back
+cd ice-cream-shop-back
+
+# Inicializar proyecto Node.js
+npm init -y</code></pre>
+
+      <h3>Instalar todas las dependencias</h3>
+      <pre><code># Instalar Express (framework web)
+npm install express
+
+# Instalar TypeORM y driver de PostgreSQL
+npm install typeorm pg reflect-metadata
+
+# Instalar dotenv para variables de entorno
+npm install dotenv
+
+# Instalar nodemon como dependencia de desarrollo (opcional pero recomendado)
+npm install --save-dev nodemon</code></pre>
+
+      <h3>package.json resultante</h3>
+      <p>Tu <code>package.json</code> debería verse así:</p>
+      <pre><code>{
+  "name": "ice-cream-shop-back",
+  "version": "1.0.0",
+  "description": "API de heladería con Express y TypeORM",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.3",
+    "reflect-metadata": "^0.1.13",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}</code></pre>
+
+      <div class="tip">
+        <p><strong>💡 Tip:</strong> <code>nodemon</code> reinicia automáticamente el servidor cuando guardas cambios. Úsalo
+          con <code>npm run dev</code> durante el desarrollo.</p>
+      </div>
+    </section>
+
+    <!-- Variables de entorno -->
+    <section class="card">
+      <h2>🔐 Variables de Entorno</h2>
+      <p class="muted">
+        Las variables de entorno permiten configurar tu aplicación sin hardcodear valores sensibles en el código.
+      </p>
+
+      <p class="muted"><strong>Nota:</strong> Ya instalamos <code>dotenv</code> en la sección anterior.</p>
+
+      <h3>Crear archivo .env</h3>
+      <pre><code># .env
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_password
+DB_NAME=heladeria_db
+NODE_ENV=development</code></pre>
+
+      <h3>Crear archivo .env.example</h3>
+      <pre><code># .env.example (sin valores reales, solo estructura)
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=
+DB_NAME=heladeria_db
+NODE_ENV=development</code></pre>
+
+      <h3>Usar variables de entorno</h3>
+      <pre><code>// src/server.js
+require('dotenv').config();
+const express = require('express');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});</code></pre>
+
+      <div class="tip">
+        <p><strong>⚠️ Importante:</strong> Nunca subas el archivo <code>.env</code> a Git. Agrega <code>.env</code> a tu
+          <code>.gitignore</code>. Solo sube <code>.env.example</code> como plantilla.
+        </p>
+      </div>
+    </section>
+
+    <!-- PostgreSQL básico -->
+    <section class="card">
+      <h2>🐘 PostgreSQL - Introducción</h2>
+      <p class="muted">
+        PostgreSQL es una base de datos relacional robusta y gratuita. Vamos a usarla para almacenar nuestros datos de
+        forma profesional.
+      </p>
+
+      <h3>¿Qué es PostgreSQL?</h3>
+      <ul>
+        <li>Base de datos relacional (SQL)</li>
+        <li>Open source y gratuita</li>
+        <li>Muy robusta y confiable</li>
+        <li>Usada por empresas grandes (Instagram, Spotify, etc.)</li>
+        <li>Mejor que SQLite para aplicaciones en producción</li>
+      </ul>
+
+      <h3>Instalación de PostgreSQL</h3>
+      <p><strong>Linux (Ubuntu/Debian):</strong></p>
+      <pre><code>sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+sudo systemctl enable postgresql</code></pre>
+
+      <p><strong>macOS:</strong></p>
+      <pre><code>brew install postgresql
+brew services start postgresql</code></pre>
+
+      <p><strong>Windows:</strong></p>
+      <p>Descarga el instalador desde: <a href="https://www.postgresql.org/download/windows/" target="_blank">https://www.postgresql.org/download/windows/</a></p>
+
+      <h3>Crear base de datos</h3>
+      <pre><code># Acceder a PostgreSQL
+sudo -u postgres psql
+
+# Crear base de datos
+CREATE DATABASE heladeria_db;
+
+# Crear usuario (opcional, puedes usar postgres)
+CREATE USER heladeria_user WITH PASSWORD 'tu_password';
+GRANT ALL PRIVILEGES ON DATABASE heladeria_db TO heladeria_user;
+
+# Salir
+\q</code></pre>
+
+      <h3>Verificar conexión</h3>
+      <pre><code># Conectar a la base de datos
+psql -U postgres -d heladeria_db
+
+# O si creaste un usuario
+psql -U heladeria_user -d heladeria_db</code></pre>
+    </section>
+
+    <!-- TypeORM -->
+    <section class="card">
+      <h2>🗄️ TypeORM - Introducción</h2>
+      <p class="muted">
+        TypeORM es un ORM (Object-Relational Mapping) que permite trabajar con bases de datos usando objetos JavaScript
+        en lugar de escribir SQL directamente.
+      </p>
+
+      <h3>¿Qué es un ORM?</h3>
+      <ul>
+        <li><strong>ORM:</strong> Object-Relational Mapping (Mapeo Objeto-Relacional)</li>
+        <li>Traduce entre objetos JavaScript y tablas de base de datos</li>
+        <li>Escribe menos código SQL manual</li>
+        <li>Más seguro (previene SQL injection)</li>
+        <li>Más fácil de mantener</li>
+      </ul>
+
+      <h3>Instalación</h3>
+      <p class="muted">Ya instalamos TypeORM, <code>pg</code> y <code>reflect-metadata</code> en la sección de instalación anterior.</p>
+      <ul>
+        <li><strong>typeorm:</strong> El ORM principal</li>
+        <li><strong>pg:</strong> Driver de PostgreSQL para Node.js</li>
+        <li><strong>reflect-metadata:</strong> Necesario para que TypeORM funcione con decoradores</li>
+      </ul>
+
+      <h3>Configuración básica</h3>
+      <pre><code>// src/config/database.js
+const { DataSource } = require('typeorm');
+require('dotenv').config();
+
+// Importar entidades
+const SaborSchema = require('../models/Sabor');
+
+const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  synchronize: false, // No sincronizar automáticamente (creamos tablas manualmente)
+  logging: process.env.NODE_ENV === 'development',
+  entities: [SaborSchema], // Pasar las entidades directamente
+});
+
+module.exports = AppDataSource;</code></pre>
+
+    </section>
+
+    <!-- Modelos con TypeORM -->
+    <section class="card">
+      <h2>📊 Crear Modelos con TypeORM</h2>
+      <p class="muted">
+        Los modelos definen la estructura de tus tablas en la base de datos usando clases JavaScript.
+      </p>
+
+      <h3>Modelo de Sabor</h3>
+      <pre><code>// src/models/Sabor.js
+const { EntitySchema } = require('typeorm');
+
+const SaborSchema = new EntitySchema({
+  name: 'Sabor',
+  tableName: 'sabores',
+  columns: {
+    id: {
+      type: 'int',
+      primary: true,
+      generated: true,
+    },
+    nombre: {
+      type: 'varchar',
+      length: 100,
+    },
+    precio: {
+      type: 'decimal',
+      precision: 10,
+      scale: 2,
+    },
+    disponible: {
+      type: 'boolean',
+      default: true,
+    },
+    createdAt: {
+      type: 'timestamp',
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updatedAt: {
+      type: 'timestamp',
+      default: () => 'CURRENT_TIMESTAMP',
+      onUpdate: 'CURRENT_TIMESTAMP',
+    },
+  },
+});
+
+module.exports = SaborSchema;</code></pre>
+
+      <h3>Crear las tablas en PostgreSQL</h3>
+      <p>Debes crear las tablas manualmente en PostgreSQL antes de usar TypeORM. Ejecuta estos comandos SQL:</p>
+
+      <pre><code># Conectar a PostgreSQL
+psql -U postgres -d heladeria_db
+
+# Crear la tabla sabores
+CREATE TABLE sabores (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  precio DECIMAL(10, 2) NOT NULL,
+  disponible BOOLEAN DEFAULT true,
+  "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+# Verificar que se creó
+\dt
+
+# Salir
+\q</code></pre>
+
+      <h3>Insertar 5 sabores de ejemplo</h3>
+      <p class="muted">Puedes cargar datos de prueba con SQL para verificar que todo funciona.</p>
+      <pre><code># Conectar a PostgreSQL
+psql -U postgres -d heladeria_db
+
+# Insertar 5 sabores
+INSERT INTO sabores (nombre, precio, disponible) VALUES
+  ('Vainilla', 2.50, true),
+  ('Chocolate', 2.80, true),
+  ('Fresa', 2.60, true),
+  ('Menta Chips', 3.10, true),
+  ('Café', 2.90, false);
+
+# Verificar datos
+SELECT * FROM sabores;
+
+# Salir
+\q</code></pre>
+
+      <div class="tip">
+        <p><strong>💡 Nota:</strong> Los nombres de las columnas con mayúsculas (como <code>"createdAt"</code>) deben ir
+          entre comillas dobles en PostgreSQL. Esto coincide con los nombres en tu modelo TypeORM.</p>
+      </div>
+
+      <p class="muted"><strong>Importante:</strong> Asegúrate de crear la tabla antes de iniciar el servidor. TypeORM
+        solo se conectará a la base de datos, no creará las tablas automáticamente.</p>
+
+      <h3>Inicializar la conexión</h3>
+      <pre><code>// src/server.js
+require('reflect-metadata');
+const express = require('express');
+const AppDataSource = require('./config/database');
+
+const app = express();
+app.use(express.json());
+
+// Inicializar conexión a base de datos
+AppDataSource.initialize()
+  .then(() => {
+    console.log('✅ Base de datos conectada');
+    
+    // Iniciar servidor
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Error al conectar con la base de datos:', error);
+    process.exit(1);
+  });</code></pre>
+
+      <h3>Decoradores de TypeORM</h3>
+      <p>Los decoradores más comunes:</p>
+      <ul>
+        <li><code>@Entity('nombre_tabla')</code> - Define una entidad (tabla)</li>
+        <li><code>@PrimaryGeneratedColumn()</code> - ID auto-incremental</li>
+        <li><code>@Column({ type: 'tipo' })</code> - Define una columna</li>
+        <li><code>@CreateDateColumn()</code> - Fecha de creación automática</li>
+        <li><code>@UpdateDateColumn()</code> - Fecha de actualización automática</li>
+      </ul>
+    </section>
+
+    <!-- Controllers -->
+    <section class="card">
+      <h2>🎮 Controllers (Controladores)</h2>
+      <p class="muted">
+        Los controladores contienen la lógica de negocio y manejan las peticiones HTTP.
+      </p>
+
+      <h3>Controller de Sabores</h3>
+      <pre><code>// src/controllers/saboresController.js
+const AppDataSource = require('../config/database');
+const Sabor = require('../models/Sabor');
+
+// Obtener todos los sabores
+async function obtenerTodos(req, res) {
+  try {
+    const saborRepository = AppDataSource.getRepository(Sabor);
+    const sabores = await saborRepository.find({
+      order: { id: 'ASC' }
+    });
+    res.json(sabores);
+  } catch (error) {
+    console.error('Error al obtener sabores:', error);
+    res.status(500).json({ error: 'Error al obtener sabores' });
+  }
+}
+
+// Obtener un sabor por ID
+async function obtenerPorId(req, res) {
+  try {
+    const { id } = req.params;
+    const saborRepository = AppDataSource.getRepository(Sabor);
+    const sabor = await saborRepository.findOne({ where: { id: parseInt(id) } });
+    
+    if (!sabor) {
+      return res.status(404).json({ error: 'Sabor no encontrado' });
+    }
+    
+    res.json(sabor);
+  } catch (error) {
+    console.error('Error al obtener sabor:', error);
+    res.status(500).json({ error: 'Error al obtener sabor' });
+  }
+}
+
+// Crear un nuevo sabor
+async function crear(req, res) {
+  try {
+    const { nombre, precio } = req.body;
+    
+    // Validación básica
+    if (!nombre || !precio) {
+      return res.status(400).json({ 
+        error: 'Nombre y precio son requeridos' 
+      });
+    }
+    
+    const saborRepository = AppDataSource.getRepository(Sabor);
+    const nuevoSabor = saborRepository.create({
+      nombre: nombre.trim(),
+      precio: parseFloat(precio),
+      disponible: true
+    });
+    
+    const saborGuardado = await saborRepository.save(nuevoSabor);
+    res.status(201).json(saborGuardado);
+  } catch (error) {
+    console.error('Error al crear sabor:', error);
+    res.status(500).json({ error: 'Error al crear sabor' });
+  }
+}
+
+// Actualizar un sabor
+async function actualizar(req, res) {
+  try {
+    const { id } = req.params;
+    const { nombre, precio, disponible } = req.body;
+    
+    const saborRepository = AppDataSource.getRepository(Sabor);
+    const sabor = await saborRepository.findOne({ where: { id: parseInt(id) } });
+    
+    if (!sabor) {
+      return res.status(404).json({ error: 'Sabor no encontrado' });
+    }
+    
+    // Actualizar solo los campos proporcionados
+    if (nombre !== undefined) sabor.nombre = nombre.trim();
+    if (precio !== undefined) sabor.precio = parseFloat(precio);
+    if (disponible !== undefined) sabor.disponible = disponible;
+    
+    const saborActualizado = await saborRepository.save(sabor);
+    res.json(saborActualizado);
+  } catch (error) {
+    console.error('Error al actualizar sabor:', error);
+    res.status(500).json({ error: 'Error al actualizar sabor' });
+  }
+}
+
+// Eliminar un sabor
+async function eliminar(req, res) {
+  try {
+    const { id } = req.params;
+    const saborRepository = AppDataSource.getRepository(Sabor);
+    const resultado = await saborRepository.delete(parseInt(id));
+    
+    if (resultado.affected === 0) {
+      return res.status(404).json({ error: 'Sabor no encontrado' });
+    }
+    
+    res.json({ mensaje: 'Sabor eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar sabor:', error);
+    res.status(500).json({ error: 'Error al eliminar sabor' });
+  }
+}
+
+module.exports = {
+  obtenerTodos,
+  obtenerPorId,
+  crear,
+  actualizar,
+  eliminar
+};</code></pre>
+    </section>
+
+    <!-- Routes -->
+    <section class="card">
+      <h2>🛣️ Routes (Rutas)</h2>
+      <p class="muted">
+        Las rutas definen los endpoints de tu API y conectan las peticiones HTTP con los controladores.
+      </p>
+
+      <h3>Rutas de Sabores</h3>
+      <pre><code>// src/routes/saboresRoutes.js
+const express = require('express');
+const router = express.Router();
+const saboresController = require('../controllers/saboresController');
+
+// GET /api/sabores - Obtener todos los sabores
+router.get('/', saboresController.obtenerTodos);
+
+// GET /api/sabores/:id - Obtener un sabor por ID
+router.get('/:id', saboresController.obtenerPorId);
+
+// POST /api/sabores - Crear un nuevo sabor
+router.post('/', saboresController.crear);
+
+// PUT /api/sabores/:id - Actualizar un sabor
+router.put('/:id', saboresController.actualizar);
+
+// DELETE /api/sabores/:id - Eliminar un sabor
+router.delete('/:id', saboresController.eliminar);
+
+module.exports = router;</code></pre>
+
+      <h3>Registrar rutas en el servidor</h3>
+      <pre><code>// src/server.js
+require('reflect-metadata');
+const express = require('express');
+const AppDataSource = require('./config/database');
+const saboresRoutes = require('./routes/saboresRoutes');
+
+const app = express();
+app.use(express.json());
+
+// Middleware de CORS (si tu frontend está en otro puerto)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+// Rutas
+app.use('/api/sabores', saboresRoutes);
+
+// Ruta de prueba
+app.get('/', (req, res) => {
+  res.json({ mensaje: 'API de Heladería funcionando' });
+});
+
+// Inicializar base de datos y servidor
+AppDataSource.initialize()
+  .then(() => {
+    console.log('✅ Base de datos conectada');
+    
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+      console.log(`📡 API disponible en http://localhost:${PORT}/api`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Error al conectar con la base de datos:', error);
+    process.exit(1);
+  });</code></pre>
+    </section>
+
+    <!-- Middleware de errores -->
+    <section class="card">
+      <h2>⚠️ Manejo de Errores</h2>
+      <p class="muted">
+        Un middleware centralizado para manejar errores hace el código más limpio y consistente.
+      </p>
+
+      <h3>Middleware de manejo de errores</h3>
+      <pre><code>// src/middleware/errorHandler.js
+function errorHandler(err, req, res, next) {
+  console.error('Error:', err);
+  
+  // Errores de validación de TypeORM
+  if (err.name === 'QueryFailedError') {
+    return res.status(400).json({ 
+      error: 'Error en la consulta a la base de datos',
+      detalles: err.message 
+    });
+  }
+  
+  // Error 404
+  if (err.status === 404) {
+    return res.status(404).json({ error: err.message || 'Recurso no encontrado' });
+  }
+  
+  // Error 500 (genérico)
+  res.status(err.status || 500).json({ 
+    error: err.message || 'Error interno del servidor' 
+  });
+}
+
+module.exports = errorHandler;</code></pre>
+
+      <h3>Usar el middleware de errores</h3>
+      <pre><code>// src/server.js
+const errorHandler = require('./middleware/errorHandler');
+
+// ... resto del código ...
+
+// Middleware de errores (debe ir al final, después de todas las rutas)
+app.use(errorHandler);</code></pre>
+    </section>
+
+    <!-- Ejemplo completo -->
+    <section class="card">
+      <h2>🎯 Ejemplo Completo: Estructura Completa</h2>
+      <p class="muted">
+        Aquí está la estructura completa de una aplicación Express con TypeORM y PostgreSQL.
+      </p>
+
+      <h3>Estructura final del proyecto</h3>
+      <pre><code>ice-cream-shop-back/
+├── src/
+│   ├── config/
+│   │   └── database.js
+│   ├── models/
+│   │   └── Sabor.js
+│   ├── controllers/
+│   │   └── saboresController.js
+│   ├── routes/
+│   │   └── saboresRoutes.js
+│   ├── middleware/
+│   │   └── errorHandler.js
+│   └── server.js
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md</code></pre>
+
+      <h3>package.json</h3>
+      <pre><code>{
+  "name": "ice-cream-shop-back",
+  "version": "1.0.0",
+  "description": "API de heladería con Express y TypeORM",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.3",
+    "reflect-metadata": "^0.1.13",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}</code></pre>
+
+      <h3>.gitignore</h3>
+      <pre><code>node_modules/
+.env
+.DS_Store
+*.log
+dist/</code></pre>
+    </section>
+
+    <!-- Operaciones comunes con TypeORM -->
+    <section class="card">
+      <h2>🔧 Operaciones Comunes con TypeORM</h2>
+      <p class="muted">
+        Referencia rápida de las operaciones más comunes que harás con TypeORM.
+      </p>
+
+      <h3>Obtener repositorio</h3>
+      <pre><code>const saborRepository = AppDataSource.getRepository(Sabor);</code></pre>
+
+      <h3>Operaciones CRUD</h3>
+      <pre><code>// CREATE - Crear
+const nuevoSabor = saborRepository.create({ nombre: 'Vainilla', precio: 2.50 });
+const saborGuardado = await saborRepository.save(nuevoSabor);
+
+// READ - Leer todos
+const sabores = await saborRepository.find();
+
+// READ - Leer uno
+const sabor = await saborRepository.findOne({ where: { id: 1 } });
+
+// READ - Con condiciones
+const saboresDisponibles = await saborRepository.find({ 
+  where: { disponible: true },
+  order: { precio: 'ASC' }
+});
+
+// UPDATE - Actualizar
+sabor.precio = 3.00;
+await saborRepository.save(sabor);
+
+// DELETE - Eliminar
+await saborRepository.delete(1);
+
+// DELETE - Eliminar con condición
+await saborRepository.delete({ disponible: false });</code></pre>
+
+      <h3>Consultas más avanzadas</h3>
+      <pre><code>// Buscar con múltiples condiciones
+const sabores = await saborRepository.find({
+  where: [
+    { disponible: true },
+    { precio: { $lt: 3.00 } } // Menor que 3.00
+  ],
+  order: { nombre: 'ASC' },
+  take: 10, // Limitar a 10 resultados
+  skip: 0   // Saltar los primeros 0
+});
+
+// Contar registros
+const total = await saborRepository.count({ where: { disponible: true } });
+
+// Buscar uno o lanzar error
+const sabor = await saborRepository.findOneOrFail({ where: { id: 1 } });</code></pre>
+    </section>
+
+    <!-- Buenas prácticas -->
+    <section class="card">
+      <h2>✅ Buenas Prácticas</h2>
+      <p class="muted">
+        Sigue estas recomendaciones para mantener tu código limpio y profesional.
+      </p>
+
+      <h3>1. Separación de responsabilidades</h3>
+      <ul>
+        <li><strong>Models:</strong> Solo definen la estructura de datos</li>
+        <li><strong>Controllers:</strong> Manejan la lógica de negocio y HTTP</li>
+        <li><strong>Routes:</strong> Solo definen las rutas</li>
+        <li><strong>Middleware:</strong> Funciones reutilizables (validación, autenticación, etc.)</li>
+      </ul>
+
+      <h3>2. Validación de datos</h3>
+      <pre><code>// src/utils/validaciones.js
+function validarSabor(data) {
+  const errores = [];
+  
+  if (!data.nombre || data.nombre.trim() === '') {
+    errores.push('El nombre es requerido');
+  }
+  
+  if (!data.precio || isNaN(data.precio) || data.precio <= 0) {
+    errores.push('El precio debe ser un número mayor a 0');
+  }
+  
+  return {
+    valido: errores.length === 0,
+    errores
+  };
+}
+
+module.exports = { validarSabor };</code></pre>
+
+      <h3>3. Manejo de errores consistente</h3>
+      <ul>
+        <li>Siempre usa try/catch en funciones async</li>
+        <li>Retorna códigos de estado HTTP apropiados</li>
+        <li>Proporciona mensajes de error claros</li>
+        <li>Usa un middleware centralizado para errores</li>
+      </ul>
+
+      <h3>4. Variables de entorno</h3>
+      <ul>
+        <li>Nunca hardcodees credenciales en el código</li>
+        <li>Usa <code>.env</code> para configuración</li>
+        <li>Agrega <code>.env</code> a <code>.gitignore</code></li>
+        <li>Proporciona <code>.env.example</code> como plantilla</li>
+      </ul>
+
+      <h3>5. Código limpio</h3>
+      <ul>
+        <li>Nombres descriptivos para variables y funciones</li>
+        <li>Funciones pequeñas y con una sola responsabilidad</li>
+        <li>Comenta código complejo, no lo obvio</li>
+        <li>Mantén la consistencia en el estilo de código</li>
+      </ul>
+    </section>
+
+    <!-- Preguntas / mini desafío -->
+    <section class="card">
+      <h2>❓ Preguntas / Mini desafío</h2>
+
+      <details>
+        <summary>¿Cuál es la diferencia entre un modelo y un controlador?</summary>
+        <p>Un <strong>modelo</strong> define la estructura de datos (la tabla en la base de datos). Un
+          <strong>controlador</strong> contiene la lógica de negocio y maneja las peticiones HTTP (qué hacer cuando
+          alguien hace GET, POST, etc.).
+        </p>
+      </details>
+
+      <details>
+        <summary>¿Por qué usar TypeORM en lugar de escribir SQL directamente?</summary>
+        <p>TypeORM te permite trabajar con objetos JavaScript en lugar de escribir SQL manual. Es más seguro (previene
+          SQL injection), más fácil de mantener, y el código es más legible. Además, TypeORM maneja automáticamente
+          muchas cosas como conexiones, transacciones, etc.</p>
+      </details>
+
+      <details>
+        <summary>¿Qué hace <code>synchronize: true</code> en TypeORM?</summary>
+        <p><code>synchronize: true</code> hace que TypeORM sincronice automáticamente tus modelos con la base de datos.
+          Si cambias un modelo, TypeORM actualiza la tabla automáticamente. Es útil en desarrollo, pero <strong>nunca</strong>
+          debe usarse en producción porque puede perder datos. En producción, usa migraciones.</p>
+      </details>
+
+      <details>
+        <summary>¿Por qué separar código en controllers, routes, y models?</summary>
+        <p>La separación hace el código más organizado, fácil de mantener, y escalable. Si necesitas cambiar cómo se
+          obtienen los datos (modelo), no afecta cómo se manejan las peticiones HTTP (routes). Si necesitas cambiar la
+          lógica de negocio (controller), no afecta la estructura de datos (modelo). Esto se llama "Separation of
+          Concerns".</p>
+      </details>
+
+      <details>
+        <summary>¿Qué es un repositorio en TypeORM?</summary>
+        <p>Un <strong>repositorio</strong> es un objeto que proporciona métodos para trabajar con una entidad específica
+          (como Sabor). Te permite hacer operaciones CRUD (Create, Read, Update, Delete) sin escribir SQL. Obtienes un
+          repositorio con <code>AppDataSource.getRepository(Entity)</code>.</p>
+      </details>
+
+      <h3>🎯 Mini desafío final</h3>
+      <div class="tip">
+        <p><strong>Desafío - Migrar tu API a Express + TypeORM + PostgreSQL:</strong></p>
+        <ol>
+          <li><strong>Instala PostgreSQL</strong> y crea una base de datos llamada <code>heladeria_db</code></li>
+          <li><strong>Instala las dependencias:</strong> <code>typeorm</code>, <code>pg</code>, <code>reflect-metadata</code>, <code>dotenv</code>
+          </li>
+          <li><strong>Crea la estructura de carpetas</strong> siguiendo el ejemplo de esta clase</li>
+          <li><strong>Crea el modelo Sabor</strong> con TypeORM (id, nombre, precio, disponible, createdAt, updatedAt)</li>
+          <li><strong>Configura la conexión</strong> a PostgreSQL en <code>src/config/database.js</code></li>
+          <li><strong>Crea el controller</strong> con todas las operaciones CRUD usando TypeORM</li>
+          <li><strong>Crea las rutas</strong> y conéctalas con el controller</li>
+          <li><strong>Migra tu API</strong> de archivos JSON a PostgreSQL</li>
+          <li><strong>Prueba todos los endpoints:</strong> GET, POST, PUT, DELETE</li>
+          <li><strong>Conecta tu frontend React</strong> (debe funcionar igual, solo cambia la URL si es necesario)</li>
+        </ol>
+        <p><em>💡 Tip: Empieza con la conexión a la base de datos y el modelo. Luego crea un endpoint simple (GET) para
+            verificar que todo funciona. Después agrega los demás endpoints uno por uno.</em></p>
+      </div>
+    </section>
+
+    <!-- Próximos pasos -->
+    <section class="card">
+      <h2>🚀 Próximos Pasos</h2>
+      <p class="muted">
+        Ahora que tienes Express + TypeORM + PostgreSQL funcionando, puedes explorar:
+      </p>
+      <ul>
+        <li><strong>Relaciones:</strong> Conectar modelos (ej: Sabor tiene muchos Pedidos)</li>
+        <li><strong>Migraciones:</strong> Controlar cambios en la base de datos de forma versionada</li>
+        <li><strong>Validación avanzada:</strong> Usar class-validator para validar datos</li>
+        <li><strong>Autenticación:</strong> JWT, sesiones, login de usuarios</li>
+        <li><strong>Middleware avanzado:</strong> Autenticación, autorización, rate limiting</li>
+        <li><strong>Testing:</strong> Probar tu API con Jest o Supertest</li>
+        <li><strong>Deploy:</strong> Desplegar en servicios como Railway, Render, o Heroku</li>
+      </ul>
+    </section>
+
+    <footer>
+      <p class="muted">
+        <strong>Facultad:</strong> Pucetec<br>
+        <strong>Carrera:</strong> Desarrollo de Software<br>
+        <strong>Materia:</strong> Desarrollo Web<br>
+        <strong>Docente:</strong> Fabián Aguirre
+      </p>
+    </footer>
+  </div>
+</body>
+
+</html>

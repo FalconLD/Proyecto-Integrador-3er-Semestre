@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    PUCETEC - Clase: useEffect en React
+  </title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Clase: useEffect en React</h1>
+      <p class="lead">Manejo de efectos secundarios y ciclo de vida en componentes funcionales — desarrollo React.</p>
+    </header>
+
+    <section class="card">
+      <span class="badge">Objetivo</span>
+      <p>
+        Aprender a usar <code>useEffect</code> para ejecutar código después del render, hacer peticiones a APIs, manejar
+        suscripciones y limpiar recursos. Entender las diferentes formas de usar useEffect y cuándo usar cada una.
+      </p>
+    </section>
+
+    <!-- useEffect -->
+    <section class="card">
+      <h2>⚡ useEffect</h2>
+      <p class="muted">
+        <code>useEffect</code> te permite ejecutar código después de que el componente se renderiza. Úsalo para hacer
+        peticiones a APIs, configurar timers, o cualquier cosa que necesites hacer "después" del render.
+      </p>
+
+      <h3>¿Cuándo usar useEffect?</h3>
+      <p>Úsalo cuando necesites:</p>
+      <ul>
+        <li>Hacer peticiones HTTP (fetch a APIs)</li>
+        <li>Configurar timers (setTimeout, setInterval)</li>
+        <li>Guardar datos en localStorage</li>
+        <li>Suscribirte a eventos externos</li>
+      </ul>
+
+      <h3>Sintaxis básica</h3>
+      <pre><code>import { useEffect } from 'react';
+
+const MiComponente = () => {
+  useEffect(() => {
+    // Código que se ejecuta después del render
+    console.log('El componente se renderizó');
+  });
+
+  return &lt;div&gt;Mi Componente&lt;/div&gt;;
+};</code></pre>
+
+      <h3>1. useEffect sin array (se ejecuta siempre)</h3>
+      <pre><code>const Componente = () => {
+  useEffect(() => {
+    console.log('Se ejecuta después de cada render');
+  });
+  // ⚠️ Cuidado: puede causar loops infinitos
+
+  return &lt;div&gt;Componente&lt;/div&gt;;
+};</code></pre>
+
+      <h3>2. useEffect con array vacío [] (solo al montar)</h3>
+      <pre><code>const Componente = () => {
+  useEffect(() => {
+    console.log('Solo se ejecuta UNA VEZ al montar');
+  }, []); // Array vacío
+
+  return &lt;div&gt;Componente&lt;/div&gt;;
+};</code></pre>
+      <p class="muted">Útil para cargar datos iniciales de una API.</p>
+
+      <h3>3. useEffect con dependencias (se ejecuta cuando cambian)</h3>
+      <pre><code>const Componente = () => {
+  const [contador, setContador] = useState(0);
+
+  useEffect(() => {
+    console.log('Se ejecuta cuando cambia contador');
+  }, [contador]); // Array con dependencias
+
+  return &lt;div&gt;Contador: {contador}&lt;/div&gt;;
+};</code></pre>
+      <p class="muted">Se ejecuta cuando <code>contador</code> cambia.</p>
+
+      <h3>Ejemplo 1: Cargar datos de una API</h3>
+      <pre><code>import { useState, useEffect } from 'react';
+
+const ListaSabores = () => {
+  const [sabores, setSabores] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    const obtenerSabores = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/sabores');
+        const data = await response.json();
+        setSabores(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    obtenerSabores();
+  }, []); // Solo al montar
+
+  if (cargando) return &lt;div&gt;Cargando...&lt;/div&gt;;
+
+  return (
+    &lt;ul&gt;
+      {sabores.map((sabor) => (
+        &lt;li key={sabor.id}&gt;{sabor.nombre} - ${sabor.precio}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+};</code></pre>
+
+      <h3>Ejemplo 2: Actualizar cuando cambia una prop</h3>
+      <pre><code>const DetalleSabor = ({ saborId }) => {
+  const [sabor, setSabor] = useState(null);
+
+  useEffect(() => {
+    const obtenerSabor = async () => {
+      const response = await fetch(`http://localhost:3000/api/sabores/${saborId}`);
+      const data = await response.json();
+      setSabor(data);
+    };
+
+    if (saborId) {
+      obtenerSabor();
+    }
+  }, [saborId]); // Se ejecuta cuando cambia saborId
+
+  if (!sabor) return &lt;div&gt;Cargando...&lt;/div&gt;;
+
+  return (
+    &lt;div&gt;
+      &lt;h2&gt;{sabor.nombre}&lt;/h2&gt;
+      &lt;p&gt;Precio: ${sabor.precio}&lt;/p&gt;
+    &lt;/div&gt;
+  );
+};</code></pre>
+
+      <h3>Ejemplo 3: Timer con cleanup</h3>
+      <pre><code>const ContadorTiempo = () => {
+  const [segundos, setSegundos] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSegundos((prev) => prev + 1);
+    }, 1000);
+
+    // Cleanup: limpia el timer cuando el componente se desmonta
+    return () => {
+      clearInterval(interval);
+    };
+  }, []); // Solo al montar
+
+  return &lt;div&gt;Tiempo: {segundos} segundos&lt;/div&gt;;
+};</code></pre>
+      <p class="muted">⚠️ <strong>Importante:</strong> Siempre limpia timers y suscripciones para evitar memory leaks.</p>
+
+      <h3>Ejemplo 4: Guardar en localStorage</h3>
+      <pre><code>const GuardarPreferencias = () => {
+  const [tema, setTema] = useState('claro');
+
+  useEffect(() => {
+    // Guardar cuando cambia el tema
+    localStorage.setItem('tema', tema);
+  }, [tema]);
+
+  return (
+    &lt;button onClick={() => setTema(tema === 'claro' ? 'oscuro' : 'claro')}&gt;
+      Tema: {tema}
+    &lt;/button&gt;
+  );
+};</code></pre>
+    </section>
+
+    <!-- Ejemplo completo -->
+    <section class="card">
+      <h2>🎯 Ejemplo Completo: Lista de Sabores</h2>
+      <p class="muted">
+        Combinando <code>useState</code> y <code>useEffect</code> para cargar y mostrar datos de una API.
+      </p>
+
+      <pre><code>import { useState, useEffect } from 'react';
+
+const ListaSabores = () => {
+  const [sabores, setSabores] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    const cargarSabores = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/sabores');
+        const data = await response.json();
+        setSabores(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarSabores();
+  }, []); // Solo al montar
+
+  if (cargando) return &lt;div&gt;Cargando...&lt;/div&gt;;
+
+  return (
+    &lt;div&gt;
+      &lt;h2&gt;Sabores Disponibles&lt;/h2&gt;
+      &lt;ul&gt;
+        {sabores.map((sabor) => (
+          &lt;li key={sabor.id}&gt;
+            {sabor.nombre} - ${sabor.precio}
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+};</code></pre>
+    </section>
+
+    <!-- Errores comunes -->
+    <section class="card">
+      <h2>⚠️ Errores Comunes</h2>
+
+      <h3>1. Olvidar dependencias</h3>
+      <pre><code>// ❌ MAL - Puede tener valores obsoletos
+const [contador, setContador] = useState(0);
+useEffect(() => {
+  console.log(contador);
+}, []); // Falta contador
+
+// ✅ BIEN
+useEffect(() => {
+  console.log(contador);
+}, [contador]); // Incluye la dependencia</code></pre>
+
+      <h3>2. Loop infinito</h3>
+      <pre><code>// ❌ MAL - Loop infinito
+const [contador, setContador] = useState(0);
+useEffect(() => {
+  setContador(contador + 1); // Causa re-render infinito
+}); // Sin array de dependencias
+
+// ✅ BIEN
+useEffect(() => {
+  // Solo se ejecuta una vez
+}, []);</code></pre>
+
+      <h3>3. No limpiar timers</h3>
+      <pre><code>// ❌ MAL - Memory leak
+useEffect(() => {
+  const interval = setInterval(() => {
+    console.log('Tick');
+  }, 1000);
+  // Falta cleanup
+}, []);
+
+// ✅ BIEN
+useEffect(() => {
+  const interval = setInterval(() => {
+    console.log('Tick');
+  }, 1000);
+  
+  return () => clearInterval(interval); // Cleanup
+}, []);</code></pre>
+    </section>
+
+    <!-- Preguntas / mini desafío -->
+    <section class="card">
+      <h2>❓ Preguntas / Mini desafío</h2>
+
+      <details>
+        <summary>¿Cuándo se ejecuta <code>useEffect</code>?</summary>
+        <p>Depende del array de dependencias:
+          <ul>
+            <li>Sin array: después de cada render (⚠️ puede causar loops)</li>
+            <li>Array vacío <code>[]</code>: solo al montar el componente</li>
+            <li>Con dependencias <code>[valor]</code>: cuando <code>valor</code> cambia</li>
+          </ul>
+        </p>
+      </details>
+
+      <details>
+        <summary>¿Qué es una cleanup function?</summary>
+        <p>Es una función que retornas de <code>useEffect</code>. Se ejecuta cuando el componente se desmonta o antes de
+          que el efecto se ejecute de nuevo. Úsala para limpiar timers, suscripciones o listeners.</p>
+      </details>
+
+      <details>
+        <summary>¿Por qué necesito el array de dependencias?</summary>
+        <p>Le dice a React cuándo ejecutar el efecto. Sin dependencias correctas, puedes tener valores obsoletos o loops
+          infinitos.</p>
+      </details>
+
+      <h3>🎯 Desafío</h3>
+      <div class="tip">
+        <p><strong>Lista de Sabores con useEffect:</strong> Crea un componente que:</p>
+        <ol>
+          <li>Use <code>useState</code> para: lista de sabores, estado de carga</li>
+          <li>Use <code>useEffect</code> para cargar los sabores desde <code>http://localhost:3000/api/sabores</code> al montar</li>
+          <li>Muestre "Cargando..." mientras se obtienen los datos</li>
+          <li>Muestre la lista de sabores cuando termine de cargar</li>
+        </ol>
+        <p><em>💡 Tip: Usa <code>fetch()</code> dentro de <code>useEffect</code> con array vacío <code>[]</code>.</em></p>
+      </div>
+    </section>
+
+    <footer>
+      <p class="muted">
+        <strong>Facultad:</strong> Pucetec<br>
+        <strong>Carrera:</strong> Desarrollo de Software<br>
+        <strong>Materia:</strong> Desarrollo Web<br>
+        <strong>Docente:</strong> Fabián Aguirre
+      </p>
+    </footer>
+  </div>
+</body>
+
+</html>

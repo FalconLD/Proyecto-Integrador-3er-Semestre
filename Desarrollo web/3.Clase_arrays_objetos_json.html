@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    PUCETEC - Clase: Arrays, Objetos y JSON
+  </title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Clase: Arrays, Objetos y JSON</h1>
+      <p class="lead">Material de apoyo para estudiantes — desarrollo web.</p>
+    </header>
+
+    <section class="card">
+      <span class="badge">Objetivo</span>
+      <p>
+        Aprender a trabajar con estructuras de datos complejas: arrays (arreglos) y objetos. Comprender cómo manipular
+        colecciones de datos, acceder a propiedades, y trabajar con JSON para intercambio de datos.
+      </p>
+    </section>
+
+    <!-- Arrays -->
+    <section class="card">
+      <h2>📋 Arrays (Arreglos)</h2>
+      <p class="muted">
+        Los arrays son estructuras de datos que permiten almacenar múltiples valores en una sola variable. Son fundamentales
+        para trabajar con listas y colecciones de datos.
+      </p>
+
+      <h3>¿Qué es un Array?</h3>
+      <p>Un <strong>array</strong> es una colección ordenada de elementos. Cada elemento tiene una posición (índice) que
+        comienza desde 0.</p>
+      <ul>
+        <li>Los arrays pueden contener cualquier tipo de dato (números, strings, objetos, otros arrays, etc.)</li>
+        <li>Los elementos se acceden mediante su índice (posición)</li>
+        <li>Los arrays tienen una propiedad <code>length</code> que indica cuántos elementos contiene</li>
+        <li>Los arrays son mutables (puedes modificar, agregar o eliminar elementos)</li>
+      </ul>
+
+      <h3>Crear Arrays</h3>
+      <p>Hay varias formas de crear un array:</p>
+      <pre><code>// Forma 1: Array literal (la más común)
+let frutas = ["manzana", "banana", "naranja"];
+
+// Forma 2: Constructor Array
+let numeros = new Array(1, 2, 3, 4, 5);
+
+// Array vacío
+let vacio = [];
+
+// Array con diferentes tipos de datos
+let mixto = ["texto", 42, true, null];</code></pre>
+
+      <h3>Acceder a Elementos</h3>
+      <p>Los elementos se acceden usando corchetes <code>[]</code> con el índice (la posición):</p>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+console.log(frutas[0]);  // "manzana" (primer elemento, índice 0)
+console.log(frutas[1]);  // "banana" (segundo elemento, índice 1)
+console.log(frutas[2]);  // "naranja" (tercer elemento, índice 2)
+console.log(frutas.length); // 3 (cantidad de elementos)
+
+// Acceder al último elemento
+console.log(frutas[frutas.length - 1]); // "naranja"</code></pre>
+
+      <h3>Modificar Elementos</h3>
+      <p>Puedes cambiar el valor de un elemento usando su índice:</p>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+frutas[1] = "uva";  // Cambia "banana" por "uva"
+console.log(frutas); // ["manzana", "uva", "naranja"]</code></pre>
+
+      <h3>Métodos Básicos de Arrays</h3>
+      <p>Los arrays tienen muchos métodos útiles para manipularlos:</p>
+
+      <h4>Agregar elementos</h4>
+      <pre><code>let frutas = ["manzana", "banana"];
+
+// push() - Agrega al final
+frutas.push("naranja");
+console.log(frutas); // ["manzana", "banana", "naranja"]
+
+// unshift() - Agrega al inicio
+frutas.unshift("uva");
+console.log(frutas); // ["uva", "manzana", "banana", "naranja"]</code></pre>
+
+      <h4>Eliminar elementos</h4>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+// pop() - Elimina el último elemento y lo retorna
+let ultima = frutas.pop();
+console.log(ultima);  // "naranja"
+console.log(frutas);  // ["manzana", "banana"]
+
+// shift() - Elimina el primer elemento y lo retorna
+let primera = frutas.shift();
+console.log(primera); // "manzana"
+console.log(frutas);  // ["banana"]</code></pre>
+
+      <h4>Encontrar elementos</h4>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+// indexOf() - Retorna el índice del elemento, o -1 si no existe
+let indice = frutas.indexOf("banana");
+console.log(indice); // 1
+
+// includes() - Retorna true si el elemento existe
+console.log(frutas.includes("manzana")); // true
+console.log(frutas.includes("uva"));    // false</code></pre>
+
+      <h4>Convertir a string</h4>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+// join() - Convierte el array en un string
+console.log(frutas.join(", ")); // "manzana, banana, naranja"
+console.log(frutas.join(" - ")); // "manzana - banana - naranja"</code></pre>
+
+      <h3>Iterar sobre Arrays</h3>
+      <p>Ya vimos <code>for...of</code> en la clase anterior. Aquí hay más formas:</p>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+// for...of (ES6) - La más moderna
+for (let fruta of frutas) {
+  console.log(fruta);
+}
+
+// for tradicional con índice
+for (let i = 0; i < frutas.length; i++) {
+  console.log(`${i}: ${frutas[i]}`);
+}
+
+// forEach() - Método de array
+frutas.forEach(function(fruta, indice) {
+  console.log(`${indice}: ${fruta}`);
+});
+
+// forEach con arrow function
+frutas.forEach((fruta, indice) => {
+  console.log(`${indice}: ${fruta}`);
+});</code></pre>
+    </section>
+
+    <!-- Objetos -->
+    <section class="card">
+      <h2>🎯 Objetos</h2>
+      <p class="muted">
+        Los objetos permiten almacenar datos estructurados como pares clave-valor. Son fundamentales para representar
+        entidades del mundo real en código.
+      </p>
+
+      <h3>¿Qué es un Objeto?</h3>
+      <p>Un <strong>objeto</strong> es una colección de propiedades. Cada propiedad tiene un nombre (clave) y un valor.</p>
+      <ul>
+        <li>Los objetos agrupan datos relacionados</li>
+        <li>Las propiedades pueden ser de cualquier tipo (string, number, boolean, array, otro objeto, función)</li>
+        <li>Las propiedades se acceden mediante notación de punto o corchetes</li>
+        <li>Los objetos son mutables (puedes agregar, modificar o eliminar propiedades)</li>
+      </ul>
+
+      <h3>Crear Objetos</h3>
+      <p>La forma más común es usar la notación literal de objeto:</p>
+      <pre><code>// Objeto literal
+let persona = {
+  nombre: "Juan",
+  edad: 25,
+  esEstudiante: true,
+  ciudad: "Quito"
+};
+
+// Objeto vacío
+let vacio = {};
+
+// Objeto con diferentes tipos de valores
+let producto = {
+  nombre: "Laptop",
+  precio: 999.99,
+  disponible: true,
+  especificaciones: ["8GB RAM", "256GB SSD"],
+  fabricante: {
+    nombre: "TechCorp",
+    pais: "USA"
+  }
+};</code></pre>
+
+      <h3>Acceder a Propiedades</h3>
+      <p>Hay dos formas de acceder a las propiedades de un objeto:</p>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  "ciudad natal": "Quito"  // Nota: propiedades con espacios necesitan comillas
+};
+
+// Notación de punto (la más común)
+console.log(persona.nombre);  // "Juan"
+console.log(persona.edad);   // 25
+
+// Notación de corchetes (útil cuando el nombre tiene espacios o es una variable)
+console.log(persona["ciudad natal"]); // "Quito"
+
+let propiedad = "nombre";
+console.log(persona[propiedad]); // "Juan" (acceso dinámico)</code></pre>
+
+      <h3>Modificar y Agregar Propiedades</h3>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25
+};
+
+// Modificar una propiedad existente
+persona.edad = 26;
+
+// Agregar una nueva propiedad
+persona.ciudad = "Quito";
+persona["email"] = "juan@example.com";
+
+console.log(persona);
+// { nombre: "Juan", edad: 26, ciudad: "Quito", email: "juan@example.com" }</code></pre>
+
+      <h3>Eliminar Propiedades</h3>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  ciudad: "Quito"
+};
+
+// delete - Elimina una propiedad
+delete persona.ciudad;
+console.log(persona); // { nombre: "Juan", edad: 25 }</code></pre>
+
+      <h3>Métodos en Objetos</h3>
+      <p>Las propiedades pueden ser funciones, llamadas <strong>métodos</strong>:</p>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  saludar: function() {
+    return `Hola, soy ${this.nombre}`;
+  },
+  // Método con arrow function (pero cuidado con 'this')
+  presentarse: () => {
+    return `Tengo ${persona.edad} años`;
+  }
+};
+
+console.log(persona.saludar());    // "Hola, soy Juan"
+console.log(persona.presentarse()); // "Tengo 25 años"
+
+// Método abreviado (ES6)
+let persona2 = {
+  nombre: "María",
+  saludar() {
+    return `Hola, soy ${this.nombre}`;
+  }
+};</code></pre>
+
+      <h3>Iterar sobre Objetos</h3>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  ciudad: "Quito"
+};
+
+// for...in - Itera sobre las propiedades
+for (let clave in persona) {
+  console.log(`${clave}: ${persona[clave]}`);
+}
+// nombre: Juan
+// edad: 25
+// ciudad: Quito
+
+// Object.keys() - Retorna un array con las claves
+let claves = Object.keys(persona);
+console.log(claves); // ["nombre", "edad", "ciudad"]
+
+// Object.values() - Retorna un array con los valores
+let valores = Object.values(persona);
+console.log(valores); // ["Juan", 25, "Quito"]
+
+// Object.entries() - Retorna un array de [clave, valor]
+let entradas = Object.entries(persona);
+console.log(entradas); // [["nombre", "Juan"], ["edad", 25], ["ciudad", "Quito"]]</code></pre>
+    </section>
+
+    <!-- Métodos Avanzados de Arrays -->
+    <section class="card">
+      <h2>🔧 Métodos Avanzados de Arrays</h2>
+      <p class="muted">
+        JavaScript proporciona métodos poderosos para transformar y manipular arrays de manera funcional.
+      </p>
+
+      <h3>map() - Transformar elementos</h3>
+      <p>Crea un nuevo array transformando cada elemento:</p>
+      <pre><code>let numeros = [1, 2, 3, 4, 5];
+
+// Multiplicar cada número por 2
+let duplicados = numeros.map(function(numero) {
+  return numero * 2;
+});
+console.log(duplicados); // [2, 4, 6, 8, 10]
+
+// Con arrow function
+let cuadrados = numeros.map(n => n * n);
+console.log(cuadrados); // [1, 4, 9, 16, 25]
+
+// Transformar objetos
+let personas = [
+  { nombre: "Juan", edad: 25 },
+  { nombre: "María", edad: 30 }
+];
+
+let nombres = personas.map(p => p.nombre);
+console.log(nombres); // ["Juan", "María"]</code></pre>
+
+      <h3>filter() - Filtrar elementos</h3>
+      <p>Crea un nuevo array con elementos que cumplen una condición:</p>
+      <pre><code>let numeros = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Filtrar números pares
+let pares = numeros.filter(n => n % 2 === 0);
+console.log(pares); // [2, 4, 6, 8, 10]
+
+// Filtrar objetos
+let personas = [
+  { nombre: "Juan", edad: 25 },
+  { nombre: "María", edad: 17 },
+  { nombre: "Pedro", edad: 30 }
+];
+
+let mayores = personas.filter(p => p.edad >= 18);
+console.log(mayores); // [{ nombre: "Juan", edad: 25 }, { nombre: "Pedro", edad: 30 }]</code></pre>
+
+      <h3>find() - Encontrar un elemento</h3>
+      <p>Retorna el primer elemento que cumple una condición:</p>
+      <pre><code>let personas = [
+  { nombre: "Juan", edad: 25 },
+  { nombre: "María", edad: 30 },
+  { nombre: "Pedro", edad: 25 }
+];
+
+// Encontrar la primera persona de 25 años
+let persona25 = personas.find(p => p.edad === 25);
+console.log(persona25); // { nombre: "Juan", edad: 25 }
+
+// Si no encuentra nada, retorna undefined
+let persona40 = personas.find(p => p.edad === 40);
+console.log(persona40); // undefined</code></pre>
+
+      <h3>forEach() - Ejecutar función para cada elemento</h3>
+      <p>Ejecuta una función para cada elemento (no retorna un nuevo array):</p>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+frutas.forEach((fruta, indice) => {
+  console.log(`${indice + 1}. ${fruta}`);
+});
+// 1. manzana
+// 2. banana
+// 3. naranja</code></pre>
+
+      <h3>reduce() - Reducir a un valor</h3>
+      <p>Reduce el array a un solo valor aplicando una función acumuladora:</p>
+      <pre><code>let numeros = [1, 2, 3, 4, 5];
+
+// Sumar todos los números
+let suma = numeros.reduce((acumulador, numero) => {
+  return acumulador + numero;
+}, 0);
+console.log(suma); // 15
+
+// Forma más corta
+let suma2 = numeros.reduce((acc, n) => acc + n, 0);
+
+// Encontrar el máximo
+let maximo = numeros.reduce((acc, n) => n > acc ? n : acc, numeros[0]);
+console.log(maximo); // 5</code></pre>
+
+      <h3>some() y every() - Verificar condiciones</h3>
+      <pre><code>let numeros = [1, 2, 3, 4, 5];
+
+// some() - Retorna true si AL MENOS UNO cumple la condición
+let hayPares = numeros.some(n => n % 2 === 0);
+console.log(hayPares); // true
+
+// every() - Retorna true si TODOS cumplen la condición
+let todosPositivos = numeros.every(n => n > 0);
+console.log(todosPositivos); // true
+
+let todosPares = numeros.every(n => n % 2 === 0);
+console.log(todosPares); // false</code></pre>
+    </section>
+
+    <!-- JSON -->
+    <section class="card">
+      <h2>📦 JSON (JavaScript Object Notation)</h2>
+      <p class="muted">
+        JSON es un formato de intercambio de datos ligero y fácil de leer. Es el estándar para comunicarse con APIs y
+        almacenar datos estructurados.
+      </p>
+
+      <h3>¿Qué es JSON?</h3>
+      <p><strong>JSON</strong> significa <strong>JavaScript Object Notation</strong>. Es un formato de texto que se parece
+        mucho a los objetos de JavaScript, pero con algunas diferencias:</p>
+      <ul>
+        <li>Las claves siempre deben estar entre comillas dobles</li>
+        <li>No permite funciones, undefined, o comentarios</li>
+        <li>Es independiente del lenguaje (no solo JavaScript lo usa)</li>
+        <li>Es el formato estándar para APIs RESTful</li>
+      </ul>
+
+      <h3>Estructura de JSON</h3>
+      <pre><code>// Ejemplo de JSON válido
+{
+  "nombre": "Juan",
+  "edad": 25,
+  "esEstudiante": true,
+  "hobbies": ["leer", "programar", "música"],
+  "direccion": {
+    "ciudad": "Quito",
+    "pais": "Ecuador"
+  }
+}</code></pre>
+
+      <h3>JSON.stringify() - Convertir objeto a JSON</h3>
+      <p>Convierte un objeto JavaScript a una cadena JSON:</p>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  esEstudiante: true
+};
+
+let jsonString = JSON.stringify(persona);
+console.log(jsonString);
+// '{"nombre":"Juan","edad":25,"esEstudiante":true}'
+
+// También funciona con arrays
+let frutas = ["manzana", "banana", "naranja"];
+let jsonFrutas = JSON.stringify(frutas);
+console.log(jsonFrutas); // '["manzana","banana","naranja"]'</code></pre>
+
+      <h3>JSON.parse() - Convertir JSON a objeto</h3>
+      <p>Convierte una cadena JSON a un objeto JavaScript:</p>
+      <pre><code>let jsonString = '{"nombre":"Juan","edad":25,"esEstudiante":true}';
+
+let persona = JSON.parse(jsonString);
+console.log(persona.nombre); // "Juan"
+console.log(persona.edad);   // 25
+
+// También funciona con arrays
+let jsonArray = '["manzana","banana","naranja"]';
+let frutas = JSON.parse(jsonArray);
+console.log(frutas[0]); // "manzana"</code></pre>
+
+      <h3>Casos de Uso Comunes</h3>
+      <ul>
+        <li><strong>Almacenamiento local:</strong> Guardar datos en localStorage del navegador</li>
+        <li><strong>Comunicación con APIs:</strong> Enviar y recibir datos de servidores</li>
+        <li><strong>Configuración:</strong> Archivos de configuración en formato JSON</li>
+        <li><strong>Intercambio de datos:</strong> Entre diferentes sistemas y lenguajes</li>
+      </ul>
+
+      <pre><code>// Ejemplo: Guardar en localStorage
+let usuario = {
+  nombre: "Juan",
+  preferencias: {
+    tema: "oscuro",
+    idioma: "es"
+  }
+};
+
+// Guardar (convertir a JSON)
+localStorage.setItem("usuario", JSON.stringify(usuario));
+
+// Leer (convertir de JSON)
+let usuarioGuardado = JSON.parse(localStorage.getItem("usuario"));
+console.log(usuarioGuardado.nombre); // "Juan"</code></pre>
+    </section>
+
+    <!-- Destructuring -->
+    <section class="card">
+      <h2>🎁 Destructuring (Desestructuración)</h2>
+      <p class="muted">
+        La desestructuración es una sintaxis que permite extraer valores de arrays u objetos de manera más concisa.
+      </p>
+
+      <h3>Destructuring de Arrays</h3>
+      <pre><code>let frutas = ["manzana", "banana", "naranja"];
+
+// Extraer valores
+let [primera, segunda, tercera] = frutas;
+console.log(primera);  // "manzana"
+console.log(segunda);  // "banana"
+console.log(tercera);  // "naranja"
+
+// Saltar elementos
+let [primera2, , tercera2] = frutas;
+console.log(primera2); // "manzana"
+console.log(tercera2); // "naranja"
+
+// Valores por defecto
+let [a, b, c, d = "uva"] = frutas;
+console.log(d); // "uva" (porque no hay cuarto elemento)
+
+// Intercambiar variables
+let x = 10;
+let y = 20;
+[x, y] = [y, x];
+console.log(x); // 20
+console.log(y); // 10</code></pre>
+
+      <h3>Destructuring de Objetos</h3>
+      <pre><code>let persona = {
+  nombre: "Juan",
+  edad: 25,
+  ciudad: "Quito"
+};
+
+// Extraer propiedades
+let { nombre, edad } = persona;
+console.log(nombre); // "Juan"
+console.log(edad);   // 25
+
+// Renombrar variables
+let { nombre: nombreCompleto, edad: años } = persona;
+console.log(nombreCompleto); // "Juan"
+console.log(años);           // 25
+
+// Valores por defecto
+let { nombre: n, email = "sin email" } = persona;
+console.log(email); // "sin email"
+
+// Destructuring en parámetros de función
+function saludar({ nombre, edad }) {
+  return `Hola, soy ${nombre} y tengo ${edad} años`;
+}
+
+console.log(saludar(persona)); // "Hola, soy Juan y tengo 25 años"</code></pre>
+    </section>
+
+    <!-- Preguntas / mini desafío -->
+    <section class="card">
+      <h2>❓ Preguntas / Mini desafío</h2>
+
+      <details>
+        <summary>¿Cuál es la diferencia entre un array y un objeto?</summary>
+        <p>Un array es una colección ordenada de elementos accedidos por índice numérico (0, 1, 2...), mientras que un
+          objeto es una colección de propiedades accedidas por nombre (clave). Los arrays son mejores para listas
+          ordenadas, los objetos para representar entidades con propiedades nombradas.</p>
+      </details>
+
+      <details>
+        <summary>¿Qué diferencia hay entre <code>map()</code> y <code>forEach()</code>?</summary>
+        <p><code>map()</code> crea un nuevo array con los resultados de aplicar una función a cada elemento, mientras que
+          <code>forEach()</code> solo ejecuta una función para cada elemento sin retornar nada. Usa <code>map()</code> cuando
+          necesites transformar datos, y <code>forEach()</code> cuando solo necesites ejecutar una acción.
+        </p>
+      </details>
+
+      <details>
+        <summary>¿Cuándo usar <code>filter()</code> y cuándo usar <code>find()</code>?</summary>
+        <p><code>filter()</code> retorna un nuevo array con todos los elementos que cumplen una condición. <code>find()</code>
+          retorna solo el primer elemento que cumple la condición (o undefined si no hay ninguno). Usa <code>filter()</code>
+          cuando necesites múltiples resultados, y <code>find()</code> cuando solo necesites uno.</p>
+      </details>
+
+      <details>
+        <summary>¿Qué es JSON y para qué se usa?</summary>
+        <p>JSON (JavaScript Object Notation) es un formato de texto para intercambiar datos. Se usa principalmente para
+          comunicarse con APIs, almacenar datos en localStorage, y como formato de configuración. Es independiente del
+          lenguaje y fácil de leer y escribir.</p>
+      </details>
+
+      <details>
+        <summary>¿Cuál es la diferencia entre <code>JSON.stringify()</code> y <code>JSON.parse()</code>?</summary>
+        <p><code>JSON.stringify()</code> convierte un objeto o array de JavaScript a una cadena JSON (para enviar o
+          almacenar). <code>JSON.parse()</code> convierte una cadena JSON a un objeto o array de JavaScript (para usar los
+          datos).</p>
+      </details>
+
+      <h3>🎯 Mini desafío final</h3>
+      <div class="tip">
+        <p><strong>Desafío - Gestor de Tareas:</strong> Crea un programa que:</p>
+        <ol>
+          <li>Tenga un array de objetos que representen tareas, cada una con: <code>id</code>, <code>titulo</code>,
+            <code>completada</code> (boolean)
+          </li>
+          <li>Crea al menos 5 tareas de ejemplo</li>
+          <li>Implementa las siguientes funciones:
+            <ul>
+              <li><code>obtenerTareasPendientes()</code> - Retorna solo las tareas no completadas usando <code>filter()</code>
+              </li>
+              <li><code>marcarCompletada(id)</code> - Marca una tarea como completada según su id</li>
+              <li><code>contarTareas()</code> - Retorna el total de tareas y cuántas están completadas</li>
+              <li><code>obtenerTitulos()</code> - Retorna un array solo con los títulos usando <code>map()</code></li>
+            </ul>
+          </li>
+          <li>Convierte el array de tareas a JSON y luego vuelve a convertirlo a objeto</li>
+          <li>Muestra los resultados en consola</li>
+        </ol>
+        <p><em>💡 Tip: Usa los métodos de arrays que aprendiste: filter, map, find. Practica con objetos y JSON.</em></p>
+      </div>
+    </section>
+
+    <footer>
+      <p class="muted">
+        <strong>Facultad:</strong> Pucetec<br>
+        <strong>Carrera:</strong> Desarrollo de Software<br>
+        <strong>Materia:</strong> Desarrollo Web<br>
+        <strong>Docente:</strong> Fabián Aguirre
+      </p>
+    </footer>
+  </div>
+</body>
+
+</html>
+
