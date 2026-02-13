@@ -244,5 +244,3 @@ AS
   WHERE TotalRegistros > 0
   ORDER BY PromedioLitros ASC;
 GO
-
-

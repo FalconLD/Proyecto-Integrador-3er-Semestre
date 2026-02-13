@@ -13,11 +13,15 @@ const AppDataSource = new DataSource({
     encrypt: true,
     trustServerCertificate: false,
     enableArithAbort: true,
+    connectTimeout: 30000,
+    requestTimeout: 30000,
   },
   synchronize: true, // En desarrollo: crea/actualiza tablas automáticamente
   logging: process.env.NODE_ENV === 'development',
   entities: [
     __dirname + '/../models/Usuario.js',
+    __dirname + '/../models/Role.js',
+    __dirname + '/../models/PermisoCatalogo.js',
     __dirname + '/../models/RegistroDiario.js',
     __dirname + '/../models/RegistroSemanal.js',
     __dirname + '/../models/Auditoria.js',

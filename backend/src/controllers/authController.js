@@ -2,6 +2,7 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const AppDataSource = require('../config/database');
+const { getPermisosEfectivos } = require('../config/permisos');
 
 const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
 
@@ -16,7 +17,9 @@ function parsePermisos(permisosStr) {
 }
 
 function toSafeUser(usuario) {
-  const permisos = parsePermisos(usuario.permisos);
+  const permisos = getPermisosEfectivos(usuario).length
+    ? getPermisosEfectivos(usuario)
+    : parsePermisos(usuario.permisos);
   return {
     id: usuario.id,
     nombre: usuario.nombre,
@@ -25,6 +28,7 @@ function toSafeUser(usuario) {
     avatar_url: usuario.avatar_url,
     modo_oscuro: usuario.modo_oscuro,
     role: usuario.role || 'user',
+    roleId: usuario.roleId ?? null,
     permisos,
   };
 }
@@ -74,7 +78,10 @@ async function login(req, res) {
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { email } });
+    const usuario = await repo.findOne({
+      where: { email },
+      relations: ['rol', 'rol.permisos'],
+    });
     if (!usuario || !usuario.passwordHash) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }

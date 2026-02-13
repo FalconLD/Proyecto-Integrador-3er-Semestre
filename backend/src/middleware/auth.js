@@ -17,7 +17,10 @@ async function auth(req, res, next) {
       process.env.JWT_SECRET || 'fallback-secret'
     );
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { id: decoded.id } });
+    const usuario = await repo.findOne({
+      where: { id: decoded.id },
+      relations: ['rol', 'rol.permisos'],
+    });
     if (!usuario) {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }

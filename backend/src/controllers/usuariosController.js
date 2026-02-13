@@ -1,11 +1,16 @@
 const AppDataSource = require('../config/database');
 const mongoose = require('mongoose');
 const RankingEntry = require('../models/RankingEntry');
+const { tienePermiso, PERMISOS } = require('../config/permisos');
 
 const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
 const getAuditoriaRepo = () => AppDataSource.getRepository('Auditoria');
 const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
 const getSemanalRepo = () => AppDataSource.getRepository('RegistroSemanal');
+
+function puedeGestionarUsuarios(usuario) {
+  return usuario && (usuario.role === 'admin' || tienePermiso(usuario, PERMISOS.USUARIOS_LISTAR) || tienePermiso(usuario, PERMISOS.ADMIN_VER_PANEL));
+}
 
 const logAuditoria = async (usuarioId, entidad, operacion, detalle) => {
   try {
@@ -18,6 +23,9 @@ const logAuditoria = async (usuarioId, entidad, operacion, detalle) => {
 
 async function obtenerTodos(req, res) {
   try {
+    if (!puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'No tienes permiso para listar usuarios' });
+    }
     const repo = getUsuarioRepo();
     const usuarios = await repo.find({ order: { id: 'ASC' } });
     res.json(usuarios);
@@ -30,8 +38,12 @@ async function obtenerTodos(req, res) {
 async function obtenerPorId(req, res) {
   try {
     const { id } = req.params;
+    const idNum = parseInt(id);
+    if (req.user.id !== idNum && !puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'Solo puedes ver tu propio perfil' });
+    }
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { id: parseInt(id) } });
+    const usuario = await repo.findOne({ where: { id: idNum } });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(usuario);
   } catch (error) {
@@ -42,8 +54,12 @@ async function obtenerPorId(req, res) {
 async function obtenerPorEmail(req, res) {
   try {
     const { email } = req.params;
+    const emailDecoded = decodeURIComponent(email);
+    if (req.user.email !== emailDecoded && !puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'Solo puedes consultar tu propio perfil' });
+    }
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { email } });
+    const usuario = await repo.findOne({ where: { email: emailDecoded } });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(usuario);
   } catch (error) {
@@ -53,6 +69,9 @@ async function obtenerPorEmail(req, res) {
 
 async function crear(req, res) {
   try {
+    if (!puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'Solo un administrador puede crear usuarios por esta vía' });
+    }
     const { nombre, email, edad, avatar_url, modo_oscuro } = req.body;
     if (!nombre || !email || !edad) {
       return res.status(400).json({ error: 'Nombre, email y edad son requeridos' });
@@ -78,9 +97,13 @@ async function crear(req, res) {
 async function actualizar(req, res) {
   try {
     const { id } = req.params;
+    const idNum = parseInt(id);
+    if (req.user.id !== idNum && !puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'Solo puedes actualizar tu propio perfil' });
+    }
     const { nombre, edad, avatar_url, modo_oscuro } = req.body;
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { id: parseInt(id) } });
+    const usuario = await repo.findOne({ where: { id: idNum } });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
     if (nombre !== undefined) usuario.nombre = nombre;
     if (edad !== undefined) usuario.edad = parseInt(edad);
@@ -98,6 +121,9 @@ async function eliminar(req, res) {
   try {
     const { id } = req.params;
     const usuarioId = parseInt(id);
+    if (req.user.id !== usuarioId && !puedeGestionarUsuarios(req.user)) {
+      return res.status(403).json({ error: 'Solo puedes eliminar tu propia cuenta o tener permiso de administración' });
+    }
     const repo = getUsuarioRepo();
     const usuario = await repo.findOne({ where: { id: usuarioId } });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });

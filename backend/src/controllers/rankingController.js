@@ -30,6 +30,11 @@ async function upsert(req, res) {
     if (!usuarioId || avgConsumption === undefined) {
       return res.status(400).json({ error: 'usuarioId y avgConsumption son requeridos' });
     }
+    const idSolicitado = Number(usuarioId);
+    const idUsuario = req.user?.id;
+    if (idUsuario != null && idSolicitado !== idUsuario) {
+      return res.status(403).json({ error: 'Solo puedes actualizar tu propia posición en el ranking' });
+    }
     const entry = await RankingEntry.findOneAndUpdate(
       { usuarioId },
       { usuarioId, nombre: nombre || null, avgConsumption },

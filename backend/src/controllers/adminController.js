@@ -3,6 +3,7 @@ const authController = require('./authController');
 
 const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
 const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
+const getRoleRepo = () => AppDataSource.getRepository('Role');
 
 async function resumen(req, res) {
   try {
@@ -76,6 +77,7 @@ async function listarUsuarios(req, res) {
       email: u.email,
       edad: u.edad,
       role: u.role || 'user',
+      roleId: u.roleId ?? null,
       permisos: authController.parsePermisos(u.permisos),
     }));
     res.json(safe);
@@ -87,20 +89,32 @@ async function listarUsuarios(req, res) {
 async function cambiarRol(req, res) {
   try {
     const { id } = req.params;
-    const { role } = req.body;
-    if (!role || !['user', 'admin'].includes(role)) {
-      return res.status(400).json({ error: 'Rol debe ser "user" o "admin"' });
-    }
+    const { role, roleId } = req.body;
     const repo = getUsuarioRepo();
     const usuario = await repo.findOne({ where: { id: parseInt(id) } });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
-    usuario.role = role;
+
+    if (roleId !== undefined && roleId !== null) {
+      const roleRepo = getRoleRepo();
+      const rol = await roleRepo.findOne({ where: { id: parseInt(roleId) } });
+      if (!rol) return res.status(400).json({ error: 'Rol no encontrado' });
+      usuario.roleId = rol.id;
+      usuario.role = rol.nombre;
+    } else if (role && ['user', 'admin'].includes(role)) {
+      usuario.role = role;
+      const roleRepo = getRoleRepo();
+      const rol = await roleRepo.findOne({ where: { nombre: role } });
+      usuario.roleId = rol ? rol.id : null;
+    } else {
+      return res.status(400).json({ error: 'Indica role ("user"|"admin") o roleId (número)' });
+    }
     await repo.save(usuario);
     res.json({
       id: usuario.id,
       nombre: usuario.nombre,
       email: usuario.email,
       role: usuario.role,
+      roleId: usuario.roleId,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,8 +1,13 @@
 const AppDataSource = require('../config/database');
+const { tienePermiso, PERMISOS } = require('../config/permisos');
 
 const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
 const getSemanalRepo = () => AppDataSource.getRepository('RegistroSemanal');
 const getAuditoriaRepo = () => AppDataSource.getRepository('Auditoria');
+
+function puedeVerRegistrosDeOtro(usuario) {
+  return usuario && (usuario.role === 'admin' || tienePermiso(usuario, PERMISOS.REGISTROS_VER_TODOS));
+}
 
 const logAuditoria = async (usuarioId, entidad, operacion, detalle) => {
   try {
@@ -16,9 +21,13 @@ const logAuditoria = async (usuarioId, entidad, operacion, detalle) => {
 async function obtenerPorUsuario(req, res) {
   try {
     const { usuarioId } = req.params;
+    const idSolicitado = parseInt(usuarioId);
+    if (req.user.id !== idSolicitado && !puedeVerRegistrosDeOtro(req.user)) {
+      return res.status(403).json({ error: 'No tienes permiso para ver los registros de otro usuario' });
+    }
     const repo = getRegistroRepo();
     const registros = await repo.find({
-      where: { usuarioId: parseInt(usuarioId) },
+      where: { usuarioId: idSolicitado },
       order: { fecha: 'DESC', createdAt: 'DESC' },
     });
     const formatted = registros.map((r) => ({
@@ -42,11 +51,22 @@ async function crear(req, res) {
     if (!usuarioId || total === undefined) {
       return res.status(400).json({ error: 'usuarioId y total son requeridos' });
     }
+    const idPropuesto = parseInt(usuarioId);
+    if (req.user.id !== idPropuesto) {
+      return res.status(403).json({ error: 'Solo puedes crear registros para tu propio usuario' });
+    }
+    // Usar fechaISO (ISO 8601) para evitar "Invalid date" con fechas en formato locale (ej. 13/2/2026)
+    const fechaValida = fechaISO ? new Date(fechaISO) : (fecha ? new Date(fecha) : new Date());
+    const fechaParaBD = (fechaValida instanceof Date && !Number.isNaN(fechaValida.getTime()))
+      ? fechaValida
+      : new Date();
+    const fechaISOStr = fechaISO || fechaParaBD.toISOString();
+
     const repo = getRegistroRepo();
     const registro = repo.create({
-      usuarioId: parseInt(usuarioId),
-      fecha: fecha ? new Date(fecha) : new Date(),
-      fechaISO: fechaISO || new Date().toISOString(),
+      usuarioId: idPropuesto,
+      fecha: fechaParaBD,
+      fechaISO: fechaISOStr,
       total: parseInt(total),
       virtualTotal: virtualTotal ? parseInt(virtualTotal) : null,
       details: details ? JSON.stringify(details) : null,
@@ -73,6 +93,11 @@ async function eliminar(req, res) {
     const repo = getRegistroRepo();
     const registro = await repo.findOne({ where: { id: parseInt(id) } });
     if (!registro) return res.status(404).json({ error: 'Registro no encontrado' });
+    const esDueño = registro.usuarioId === req.user.id;
+    const esAdmin = puedeVerRegistrosDeOtro(req.user);
+    if (!esDueño && !esAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar este registro' });
+    }
     const usuarioId = registro.usuarioId;
     await repo.remove(registro);
     await logAuditoria(usuarioId, 'registros_diarios', 'DELETE', `id=${id}`);
@@ -85,9 +110,13 @@ async function eliminar(req, res) {
 async function obtenerSemanales(req, res) {
   try {
     const { usuarioId } = req.params;
+    const idSolicitado = parseInt(usuarioId);
+    if (req.user.id !== idSolicitado && !puedeVerRegistrosDeOtro(req.user)) {
+      return res.status(403).json({ error: 'No tienes permiso para ver los registros de otro usuario' });
+    }
     const repo = getRegistroRepo();
     const registros = await repo.find({
-      where: { usuarioId: parseInt(usuarioId) },
+      where: { usuarioId: idSolicitado },
       order: { fecha: 'ASC' },
     });
     if (registros.length < 2) {

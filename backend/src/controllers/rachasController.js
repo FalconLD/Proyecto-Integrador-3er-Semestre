@@ -1,8 +1,15 @@
 const AppDataSource = require('../config/database');
 const mongoose = require('mongoose');
 const RankingEntry = require('../models/RankingEntry');
+const { tienePermiso } = require('../config/permisos');
 
 const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
+
+function puedeVerRachasDeOtro(usuario) {
+  if (!usuario) return false;
+  if (usuario.role === 'admin' || usuario.role === 'Administrador') return true;
+  return tienePermiso(usuario, 'registros.ver_todos');
+}
 
 function daysBetween(a, b) {
   const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -18,6 +25,10 @@ async function resumenUsuario(req, res) {
   try {
     const { usuarioId } = req.params;
     const id = parseInt(usuarioId);
+    const userId = req.user?.id;
+    if (userId != null && id !== userId && !puedeVerRachasDeOtro(req.user)) {
+      return res.status(403).json({ error: 'Solo puedes consultar tus propias rachas' });
+    }
     const repo = getRegistroRepo();
 
     const registros = await repo.find({

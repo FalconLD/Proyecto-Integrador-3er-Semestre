@@ -1,6 +1,7 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const AppDataSource = require('../config/database');
+const { LISTA_PERMISOS } = require('../config/permisos');
 
 async function run() {
   try {
@@ -9,22 +10,60 @@ async function run() {
 
     const usuarioRepo = AppDataSource.getRepository('Usuario');
     const registroRepo = AppDataSource.getRepository('RegistroDiario');
+    const permisoRepo = AppDataSource.getRepository('PermisoCatalogo');
+    const roleRepo = AppDataSource.getRepository('Role');
 
-    // Admin demo (para pruebas): admin@test.com / admin123
-    let admin = await usuarioRepo.findOne({ where: { email: 'admin@test.com' } });
+    // 1. Catálogo de permisos (crear si no existen)
+    for (const nombre of LISTA_PERMISOS) {
+      let p = await permisoRepo.findOne({ where: { nombre } });
+      if (!p) {
+        const grupo = nombre.split('.')[0];
+        p = permisoRepo.create({ nombre, grupo, descripcion: null });
+        await permisoRepo.save(p);
+        console.log('Permiso creado:', nombre);
+      }
+    }
+
+    // 2. Roles: Administrador y Usuario
+    let rolAdmin = await roleRepo.findOne({ where: { nombre: 'Administrador' }, relations: ['permisos'] });
+    if (!rolAdmin) {
+      rolAdmin = roleRepo.create({ nombre: 'Administrador', descripcion: 'Acceso total al panel y gestión' });
+      await roleRepo.save(rolAdmin);
+      const todosPermisos = await permisoRepo.find();
+      rolAdmin.permisos = todosPermisos;
+      await roleRepo.save(rolAdmin);
+      console.log('Rol Administrador creado con todos los permisos');
+    }
+    let rolUsuario = await roleRepo.findOne({ where: { nombre: 'Usuario' } });
+    if (!rolUsuario) {
+      rolUsuario = roleRepo.create({ nombre: 'Usuario', descripcion: 'Usuario estándar' });
+      await roleRepo.save(rolUsuario);
+      console.log('Rol Usuario creado');
+    }
+
+    // 3. Admin demo (para pruebas): admin@puce.edu.ec / password
+    let admin = await usuarioRepo.findOne({ where: { email: 'admin@puce.edu.ec' } });
     if (!admin) {
-      const hash = await bcrypt.hash('admin123', 10);
+      const hash = await bcrypt.hash('password', 10);
       admin = usuarioRepo.create({
         nombre: 'Admin Demo',
-        email: 'admin@test.com',
+        email: 'admin@puce.edu.ec',
         edad: 30,
         passwordHash: hash,
         role: 'admin',
+        roleId: rolAdmin.id,
       });
       admin = await usuarioRepo.save(admin);
-      console.log('Usuario admin creado: admin@test.com / admin123');
+      console.log('Usuario admin creado: admin@puce.edu.ec / password');
     } else {
-      console.log('Admin ya existe');
+      if (!admin.roleId && rolAdmin) {
+        admin.roleId = rolAdmin.id;
+        admin.role = 'admin';
+        await usuarioRepo.save(admin);
+        console.log('Admin vinculado al rol Administrador');
+      } else {
+        console.log('Admin ya existe');
+      }
     }
 
     // Usuario demo principal

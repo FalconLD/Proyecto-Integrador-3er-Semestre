@@ -41,6 +41,10 @@ const UsuarioSchema = new EntitySchema({
       length: 50,
       default: 'user',
     },
+    roleId: {
+      type: 'int',
+      nullable: true,
+    },
     permisos: {
       type: 'nvarchar',
       length: 'MAX',
@@ -54,6 +58,13 @@ const UsuarioSchema = new EntitySchema({
       type: 'datetime',
       default: () => 'CURRENT_TIMESTAMP',
       onUpdate: () => 'CURRENT_TIMESTAMP',
+    },
+  },
+  relations: {
+    rol: {
+      type: 'many-to-one',
+      target: 'Role',
+      joinColumn: { name: 'roleId' },
     },
   },
 });
