@@ -35,8 +35,8 @@ END;
 GO
 
 --------------------------------------------------
--- 2. TRIGGER DE AUDITORÍA ADICIONAL
--- (además de la auditoría desde la API)
+-- 2. TRIGGER DE AUDITORÍA (INSERT, UPDATE, DELETE)
+-- Alineado con Proyecto_3P: detectar operación por inserted/deleted
 --------------------------------------------------
 
 IF OBJECT_ID('dbo.trg_registros_diarios_auditoria', 'TR') IS NOT NULL
@@ -45,30 +45,44 @@ GO
 
 CREATE TRIGGER dbo.trg_registros_diarios_auditoria
 ON dbo.registros_diarios
-AFTER INSERT, DELETE
+AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
   SET NOCOUNT ON;
 
-  -- INSERT
-  INSERT INTO dbo.auditoria (usuarioId, entidad, operacion, detalle, fecha)
-  SELECT
-    i.usuarioId,
-    'registros_diarios',
-    'INSERT',
-    CONCAT('total=', i.total),
-    SYSDATETIME()
-  FROM inserted i;
+  DECLARE @op VARCHAR(10);
 
-  -- DELETE
-  INSERT INTO dbo.auditoria (usuarioId, entidad, operacion, detalle, fecha)
-  SELECT
-    d.usuarioId,
-    'registros_diarios',
-    'DELETE',
-    CONCAT('id=', d.id),
-    SYSDATETIME()
-  FROM deleted d;
+  -- Determinar operación (mismo criterio que Proyecto_3P)
+  IF EXISTS (SELECT 1 FROM inserted) AND EXISTS (SELECT 1 FROM deleted)
+    SET @op = 'UPDATE';
+  ELSE IF EXISTS (SELECT 1 FROM inserted)
+    SET @op = 'INSERT';
+  ELSE
+    SET @op = 'DELETE';
+
+  IF @op IN ('INSERT', 'UPDATE')
+  BEGIN
+    INSERT INTO dbo.auditoria (usuarioId, entidad, operacion, detalle, fecha)
+    SELECT
+      i.usuarioId,
+      'registros_diarios',
+      @op,
+      CONCAT('id=', i.id, '; total=', i.total),
+      SYSDATETIME()
+    FROM inserted i;
+  END;
+
+  IF @op = 'DELETE'
+  BEGIN
+    INSERT INTO dbo.auditoria (usuarioId, entidad, operacion, detalle, fecha)
+    SELECT
+      d.usuarioId,
+      'registros_diarios',
+      'DELETE',
+      CONCAT('id=', d.id),
+      SYSDATETIME()
+    FROM deleted d;
+  END;
 END;
 GO
 
@@ -243,4 +257,20 @@ AS
   FROM Consumos
   WHERE TotalRegistros > 0
   ORDER BY PromedioLitros ASC;
+GO
+
+--------------------------------------------------
+-- 5. ÍNDICES (clases BD: rendimiento en consultas frecuentes)
+--------------------------------------------------
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_registros_diarios_usuarioId_fecha' AND object_id = OBJECT_ID('dbo.registros_diarios'))
+  CREATE INDEX IX_registros_diarios_usuarioId_fecha ON dbo.registros_diarios (usuarioId, fecha);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_registros_diarios_fecha' AND object_id = OBJECT_ID('dbo.registros_diarios'))
+  CREATE INDEX IX_registros_diarios_fecha ON dbo.registros_diarios (fecha);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_auditoria_usuarioId_fecha' AND object_id = OBJECT_ID('dbo.auditoria'))
+  CREATE INDEX IX_auditoria_usuarioId_fecha ON dbo.auditoria (usuarioId, fecha);
 GO
