@@ -11,43 +11,54 @@ async function resumen(req, res) {
     const usuarioRepo = getUsuarioRepo();
     const registroRepo = getRegistroRepo();
 
+    // Totales globales desde repos (o se podrían mover a vista/SP si se añade sp_ResumenGlobalH2O)
     const [usuarios, registros] = await Promise.all([
       usuarioRepo.find(),
       registroRepo.find(),
     ]);
-
     const totalUsuarios = usuarios.length;
     const totalRegistros = registros.length;
-
     const totalLitros = registros.reduce((acc, r) => acc + (r.total || 0), 0);
     const promedioGlobal =
       totalRegistros > 0 ? Math.round(totalLitros / totalRegistros) : 0;
 
-    const porUsuario = new Map();
-    registros.forEach((r) => {
-      const id = r.usuarioId;
-      if (!porUsuario.has(id)) {
-        porUsuario.set(id, { usuarioId: id, suma: 0, cuenta: 0 });
-      }
-      const entry = porUsuario.get(id);
-      entry.suma += r.total || 0;
-      entry.cuenta += 1;
-    });
-
-    const rankingUsuarios = Array.from(porUsuario.values())
-      .map((u) => {
-        const usuario = usuarios.find((x) => x.id === u.usuarioId);
-        const avg = u.cuenta > 0 ? Math.round(u.suma / u.cuenta) : 0;
-        return {
-          usuarioId: u.usuarioId,
-          nombre: usuario ? usuario.nombre : `Usuario ${u.usuarioId}`,
-          email: usuario ? usuario.email : null,
-          registros: u.cuenta,
-          avgConsumption: avg,
-        };
-      })
-      .sort((a, b) => a.avgConsumption - b.avgConsumption)
-      .slice(0, 5);
+    // Top usuarios eficientes desde vista/SP (rúbrica BD + clases: vistas para reportes)
+    let rankingUsuarios = [];
+    try {
+      // SP con valor por defecto @TopN = 5
+      const filas = await AppDataSource.query('EXEC dbo.sp_TopUsuariosEficientesH2O');
+      rankingUsuarios = (Array.isArray(filas) ? filas : []).map((row) => ({
+        usuarioId: row.UsuarioId ?? row.usuarioId,
+        nombre: row.nombre ?? row.Nombre ?? `Usuario ${row.UsuarioId ?? row.usuarioId}`,
+        email: row.email ?? row.Email ?? null,
+        registros: row.TotalRegistros ?? row.totalRegistros ?? 0,
+        avgConsumption: Math.round(Number(row.PromedioLitros ?? row.promedioLitros ?? 0)),
+      }));
+    } catch (viewErr) {
+      // Fallback: calcular en código si la vista/SP no existe (ej. migración pendiente)
+      const porUsuario = new Map();
+      registros.forEach((r) => {
+        const id = r.usuarioId;
+        if (!porUsuario.has(id)) porUsuario.set(id, { usuarioId: id, suma: 0, cuenta: 0 });
+        const entry = porUsuario.get(id);
+        entry.suma += r.total || 0;
+        entry.cuenta += 1;
+      });
+      rankingUsuarios = Array.from(porUsuario.values())
+        .map((u) => {
+          const usuario = usuarios.find((x) => x.id === u.usuarioId);
+          const avg = u.cuenta > 0 ? Math.round(u.suma / u.cuenta) : 0;
+          return {
+            usuarioId: u.usuarioId,
+            nombre: usuario ? usuario.nombre : `Usuario ${u.usuarioId}`,
+            email: usuario ? usuario.email : null,
+            registros: u.cuenta,
+            avgConsumption: avg,
+          };
+        })
+        .sort((a, b) => a.avgConsumption - b.avgConsumption)
+        .slice(0, 5);
+    }
 
     const bajoObjetivoOMS = rankingUsuarios.filter(
       (u) => u.avgConsumption > 0 && u.avgConsumption <= 150
