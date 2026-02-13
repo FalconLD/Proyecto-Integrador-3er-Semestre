@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/seedDemoData.js",
-    "clean": "node src/seed/cleanDatabase.js"
+    "clean": "node src/seed/cleanDatabase.js",
+    "run-extras": "node src/seed/runH2oExtras.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
