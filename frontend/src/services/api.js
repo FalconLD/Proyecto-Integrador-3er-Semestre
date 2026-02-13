@@ -25,6 +25,7 @@ function handleError(err) {
 }
 
 export const api = {
+  setToken,
   health: () => client.get('/api/health').then(handle).catch(handleError),
   usuarios: {
     getAll: () => client.get('/api/usuarios').then(handle).catch(handleError),
