@@ -175,10 +175,10 @@ function App() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-800 leading-none capitalize">
-              ¡Hola, {user.nombre}!
+              ¡Hola, {user?.nombre ?? 'Usuario'}!
             </h2>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
-              {user.email} • {user.edad} años
+              {user?.email ?? ''} {user?.edad != null ? `• ${user.edad} años` : ''}
             </span>
           </div>
         </div>

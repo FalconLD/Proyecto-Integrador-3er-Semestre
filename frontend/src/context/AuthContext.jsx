@@ -30,10 +30,15 @@ export function AuthProvider({ children }) {
           setUser(full);
           localStorage.setItem(STORAGE_USER, JSON.stringify(full));
         })
-        .catch(() => {
-          localStorage.removeItem(STORAGE_TOKEN);
-          setToken(null);
-          setUser(null);
+        .catch((err) => {
+          // Solo cerrar sesión si el token es inválido (401). Si falla por red/CORS, mantener usuario del login.
+          const msg = (err?.message || '').toLowerCase();
+          const isUnauthorized = msg.includes('autenticado') || msg.includes('401') || msg.includes('unauthorized') || msg.includes('token');
+          if (isUnauthorized) {
+            localStorage.removeItem(STORAGE_TOKEN);
+            setToken(null);
+            setUser(null);
+          }
         });
     }
   }, [token]);

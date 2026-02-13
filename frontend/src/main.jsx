@@ -7,10 +7,12 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { AdminGuard } from './admin/guards/AdminGuard'
 import { AdminLayout } from './admin/layouts/AdminLayout'
 import AdminPage from './pages/AdminPage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
+      <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />} />
@@ -25,6 +27,7 @@ createRoot(document.getElementById('root')).render(
           </Route>
         </Routes>
       </BrowserRouter>
+      </ErrorBoundary>
     </AuthProvider>
   </StrictMode>,
 )
