@@ -1,0 +1,7 @@
+USE EcoWrappedDB;
+GO
+
+CREATE USER app_writer WITHOUT LOGIN;
+CREATE USER app_reader WITHOUT LOGIN;
+CREATE USER etl_reader WITHOUT LOGIN;
+GO

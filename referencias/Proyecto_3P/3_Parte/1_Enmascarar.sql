@@ -1,0 +1,6 @@
+USE EcoWrappedDB;
+GO
+
+ALTER TABLE dbo.Usuario
+ALTER COLUMN Email NVARCHAR(120) MASKED WITH (FUNCTION = 'email()');
+GO
