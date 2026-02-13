@@ -17,7 +17,7 @@ const AppDataSource = new DataSource({
     requestTimeout: 30000,
   },
   synchronize: true, // En desarrollo: crea/actualiza tablas automáticamente
-  logging: process.env.NODE_ENV === 'development',
+  logging: false, // Sin volcar cada query; el arranque muestra un resumen en server.js
   entities: [
     __dirname + '/../models/Usuario.js',
     __dirname + '/../models/Role.js',

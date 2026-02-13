@@ -15,7 +15,27 @@ const rachasRoutes = require('./routes/rachasRoutes');
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
+
+// Si el puerto está ocupado, usar el siguiente disponible (evita EADDRINUSE al tener varios procesos)
+function tryListen(port) {
+  const numPort = Number(port) || PORT;
+  if (numPort < 0 || numPort > 65535) {
+    return Promise.reject(new Error(`Puerto inválido: ${port}`));
+  }
+  return new Promise((resolve, reject) => {
+    const server = app.listen(numPort, () => {
+      resolve(server);
+    });
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE' && numPort < 65535) {
+        tryListen(numPort + 1).then(resolve).catch(reject);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -43,20 +63,25 @@ app.use('/api/rachas', rachasRoutes);
 const start = async () => {
   try {
     await AppDataSource.initialize();
-    console.log('✅ Conectado a Azure SQL Database (h2o-db)');
+    const numEntidades = AppDataSource.entityMetadatas?.length ?? 0;
+    await connectMongo();
 
-    await connectMongo(); 
+    const server = await tryListen(PORT);
+    const actualPort = server.address().port;
+    const portNote = actualPort !== PORT ? ` (puerto ${PORT} ocupado → ${actualPort})` : '';
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-      console.log('📋 Endpoints principales disponibles:');
-      console.log('   - /api/health');
-      console.log('   - /api/auth/login');
-      console.log('   - /api/registros');
-    });
-
+    // Bloque de arranque con iconos
+    console.log('');
+    console.log('  ┌─────────────────────────────────────────');
+    console.log('  │  🚀 Backend listo');
+    console.log('  ├─────────────────────────────────────────');
+    console.log(`  │  ✅ Azure SQL (h2o-db) · esquema listo (${numEntidades} entidades)`);
+    console.log('  │  ✅ MongoDB conectado');
+    console.log(`  │  🌐 http://localhost:${actualPort}${portNote}`);
+    console.log('  └─────────────────────────────────────────');
+    console.log('');
   } catch (error) {
-    console.error('❌ Error crítico al iniciar el servidor:', error.message);
+    console.error('  ❌ [backend] Error:', error.message);
     process.exit(1);
   }
 };
