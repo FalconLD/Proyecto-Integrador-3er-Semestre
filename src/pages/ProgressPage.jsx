@@ -1,41 +1,71 @@
 import { useEffect, useState } from "react";
-import ProgressChart from "../pages/ProgressChart";
-import AdvicePage from "../pages/AdvicePage";
-import { getAverage, getMinDay, getMaxDay, getTrend, getWeeklyConsumption } from "../utils/analytics";
-import { Trophy, TrendingDown, Calendar, Brain, Flame } from "lucide-react";
+import ProgressChart from "./ProgressChart";
+import AdvicePage from "./AdvicePage";
+import { getAverage, getMinDay, getMaxDay, getWeeklyConsumption } from "../utils/analytics";
+import { Trophy, TrendingDown, Calendar, Flame, Loader } from "lucide-react";
 import { api } from "../services/api";
 
-const ProgressPage = ({ user, history }) => {
-  const [showAdvice, setShowAdvice] = useState(false);
+const ProgressPage = ({ user }) => {
+  const [history, setHistory] = useState([]);
   const [streak, setStreak] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Llamadas a tus servicios estándar
+        const historyData = await api.registros.getByUsuario(user.id);
+        const streakData = await api.rachas.getByUsuario(user.id);
+
+        setHistory(historyData || []); 
+        setStreak(streakData || null);
+
+      } catch (error) {
+        console.error("Error cargando datos del dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <Loader className="animate-spin text-blue-600" size={48} />
+        <p className="text-gray-500">Cargando tus datos de consumo...</p>
+      </div>
+    );
+  }
 
   if (!history || history.length < 2) {
     return (
-      <p className="text-center text-slate-400 mt-10">
-        No hay datos suficientes todavía.
-      </p>
+      <div className="text-center py-10 space-y-4">
+        <h2 className="text-2xl font-bold text-gray-700">¡Bienvenido a H2O Impact!</h2>
+        <p className="text-slate-400">
+          Aún no tienes suficientes registros para mostrar gráficas.
+        </p>
+        <p className="text-sm text-blue-500">
+          Comienza registrando tu consumo diario en la página principal.
+        </p>
+      </div>
     );
   }
 
   const average = getAverage(history);
   const minDay = getMinDay(history);
   const maxDay = getMaxDay(history);
-  const trend = getTrend(history);
 
-  // Obtener consumo semanal
   const weeklyData = getWeeklyConsumption(history);
-  const latestWeek = weeklyData[weeklyData.length - 1];
-
-  useEffect(() => {
-    if (!user?.id) return;
-    api.rachas
-      .getByUsuario(user.id)
-      .then((data) => setStreak(data))
-      .catch(() => setStreak(null));
-  }, [user?.id, history.length]);
+  const latestWeek = weeklyData[weeklyData.length - 1] || { total: 0, estimated: false };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 animate-fade-in-up">
       <header className="text-center space-y-2">
         <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
           Progreso
@@ -46,22 +76,48 @@ const ProgressPage = ({ user, history }) => {
         <div className="w-24 h-1 mx-auto bg-gray-300 rounded-full mt-3"></div>
       </header>
 
+      {/* Sección de Métricas */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <Metric title="Promedio" value={`${average} L`} color="from-gray-200 to-gray-100" icon={<Trophy className="text-gray-400" />} />
-        <Metric title="Mejor día" value={`${maxDay.total} L`} subtitle={maxDay.fecha} color="from-green-100 to-green-50" icon={<Calendar className="text-green-400" />} />
-        <Metric title="Peor día" value={`${minDay.total} L`} subtitle={minDay.fecha} color="from-red-100 to-red-50" icon={<TrendingDown className="text-red-400" />} />
-        <Metric title="Última semana" value={`${latestWeek.total} L`} subtitle={latestWeek.estimated ? "Estimada" : "Real"} color="from-blue-100 to-blue-50" icon={<Calendar className="text-blue-400" />} />
+        <Metric 
+          title="Promedio" 
+          value={`${average} L`} 
+          color="from-gray-200 to-gray-100" 
+          icon={<Trophy className="text-gray-400" />} 
+        />
+        <Metric 
+          title="Mejor día" 
+          value={`${minDay.total} L`}
+          subtitle={minDay.fecha ? new Date(minDay.fecha).toLocaleDateString() : '-'} 
+          color="from-green-100 to-green-50" 
+          icon={<Calendar className="text-green-400" />} 
+        />
+        <Metric 
+          title="Mayor Consumo" 
+          value={`${maxDay.total} L`} 
+          subtitle={maxDay.fecha ? new Date(maxDay.fecha).toLocaleDateString() : '-'} 
+          color="from-red-100 to-red-50" 
+          icon={<TrendingDown className="text-red-400" />} 
+        />
+        <Metric 
+          title="Última semana" 
+          value={`${latestWeek.total} L`} 
+          subtitle={latestWeek.estimated ? "Estimada" : "Real"} 
+          color="from-blue-100 to-blue-50" 
+          icon={<Calendar className="text-blue-400" />} 
+        />
+        
         {streak && (
           <Metric
             title="Racha actual"
-            value={`${streak.currentStreak} días`}
-            subtitle={`Máxima: ${streak.maxStreak} días`}
+            value={`${streak.currentStreak || 0} días`}
+            subtitle={`Máxima: ${streak.maxStreak || 0} días`}
             color="from-amber-100 to-orange-50"
             icon={<Flame className="text-amber-500" />}
           />
         )}
       </section>
 
+      {/* Gráfico de tendencia */}
       <div className="bg-white p-8 rounded-3xl shadow-lg relative overflow-hidden">
         <h3 className="text-lg font-semibold text-gray-700 mb-6">
           Tendencia Semanal de Consumo
@@ -69,14 +125,14 @@ const ProgressPage = ({ user, history }) => {
         <ProgressChart history={history} />
       </div>
 
+      {/* Alianza Eco */}
       {streak?.alliance && streak.alliance.miembros && streak.alliance.miembros.length > 1 && (
         <section className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 space-y-3">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
             Alianza Eco (consumos similares)
           </h3>
           <p className="text-xs text-slate-500">
-            Te estás moviendo en un rango de consumo parecido al de estos usuarios. Pueden servirte como referencia para
-            mantener o mejorar tus hábitos.
+            Comparativa con usuarios en tu mismo rango de consumo.
           </p>
           <ul className="mt-2 space-y-1 text-sm text-slate-700">
             {streak.alliance.miembros.map((m) => (
@@ -89,35 +145,12 @@ const ProgressPage = ({ user, history }) => {
         </section>
       )}
 
+      {/* Sección de Consejos Locales (Sin botón de IA) */}
       <section className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-8 rounded-3xl shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 rounded-2xl">
-              <Brain size={32} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black">
-                Análisis Inteligente
-              </h3>
-              <p className="opacity-90 mt-1">
-                Interpretación personalizada de tu consumo de agua
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowAdvice(!showAdvice)}
-            className="mt-6 bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:scale-105 transition"
-          >
-            {showAdvice ? "Ocultar análisis" : "Ver consejos personalizados"}
-          </button>
+        <div className="border-t border-gray-100 pt-8">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Recomendaciones del Sistema</h3>
+          <AdvicePage history={history} />
         </div>
-
-        {showAdvice && (
-          <div className="animate-fade-in">
-            <AdvicePage history={history} />
-          </div>
-        )}
       </section>
     </div>
   );

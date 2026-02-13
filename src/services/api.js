@@ -1,75 +1,63 @@
+import axios from 'axios';
+
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+const client = axios.create({
+  baseURL: BASE,
+  headers: { 'Content-Type': 'application/json' },
+});
 
 let authToken = null;
 
-function getHeaders() {
-  const h = { 'Content-Type': 'application/json' };
-  if (authToken) h['Authorization'] = `Bearer ${authToken}`;
-  return h;
+export function setToken(t) {
+  authToken = t;
+  if (t) client.defaults.headers.common['Authorization'] = `Bearer ${t}`;
+  else delete client.defaults.headers.common['Authorization'];
 }
 
-async function request(path, options = {}) {
-  const url = `${BASE}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...getHeaders(), ...options.headers },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || data.message || `Error ${res.status}`);
-  return data;
+async function handle(res) {
+  return res.data;
+}
+
+function handleError(err) {
+  const msg = err?.response?.data?.error || err?.response?.data?.message || err.message || 'Request error';
+  throw new Error(msg);
 }
 
 export const api = {
-  health: () => request('/api/health'),
+  health: () => client.get('/api/health').then(handle).catch(handleError),
   usuarios: {
-    getAll: () => request('/api/usuarios'),
-    getById: (id) => request(`/api/usuarios/${id}`),
-    getByEmail: (email) => request(`/api/usuarios/email/${encodeURIComponent(email)}`),
-    create: (data) => request('/api/usuarios', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => request(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => request(`/api/usuarios/${id}`, { method: 'DELETE' }),
+    getAll: () => client.get('/api/usuarios').then(handle).catch(handleError),
+    getById: (id) => client.get(`/api/usuarios/${id}`).then(handle).catch(handleError),
+    getByEmail: (email) => client.get(`/api/usuarios/email/${encodeURIComponent(email)}`).then(handle).catch(handleError),
+    create: (data) => client.post('/api/usuarios', data).then(handle).catch(handleError),
+    update: (id, data) => client.put(`/api/usuarios/${id}`, data).then(handle).catch(handleError),
+    delete: (id) => client.delete(`/api/usuarios/${id}`).then(handle).catch(handleError),
   },
   registros: {
-    getByUsuario: (usuarioId) => request(`/api/registros/usuario/${usuarioId}`),
-    getSemanales: (usuarioId) => request(`/api/registros/usuario/${usuarioId}/semanales`),
-    create: (data) => request('/api/registros', { method: 'POST', body: JSON.stringify(data) }),
-    delete: (id) => request(`/api/registros/${id}`, { method: 'DELETE' }),
+    getByUsuario: (usuarioId) => client.get(`/api/registros/usuario/${usuarioId}`).then(handle).catch(handleError),
+    getSemanales: (usuarioId) => client.get(`/api/registros/usuario/${usuarioId}/semanales`).then(handle).catch(handleError),
+    create: (data) => client.post('/api/registros', data).then(handle).catch(handleError),
+    delete: (id) => client.delete(`/api/registros/${id}`).then(handle).catch(handleError),
   },
   ranking: {
-    get: () => request('/api/ranking'),
-    upsert: (data) => request('/api/ranking', { method: 'POST', body: JSON.stringify(data) }),
+    get: () => client.get('/api/ranking').then(handle).catch(handleError),
+    upsert: (data) => client.post('/api/ranking', data).then(handle).catch(handleError),
   },
   rachas: {
-    getByUsuario: (usuarioId) => request(`/api/rachas/usuario/${usuarioId}`),
+    getByUsuario: (usuarioId) => client.get(`/api/rachas/usuario/${usuarioId}`).then(handle).catch(handleError),
   },
   admin: {
-    getSummary: () => request('/api/admin/summary'),
-    getUsuarios: () => request('/api/admin/usuarios'),
-    cambiarRol: (id, role) =>
-      request(`/api/admin/usuarios/${id}/role`, {
-        method: 'PATCH',
-        body: JSON.stringify({ role }),
-      }),
-    asignarPermisos: (id, permisos) =>
-      request(`/api/admin/usuarios/${id}/permisos`, {
-        method: 'PATCH',
-        body: JSON.stringify({ permisos }),
-      }),
+    getSummary: () => client.get('/api/admin/summary').then(handle).catch(handleError),
+    getUsuarios: () => client.get('/api/admin/usuarios').then(handle).catch(handleError),
+    cambiarRol: (id, role) => client.patch(`/api/admin/usuarios/${id}/role`, { role }).then(handle).catch(handleError),
+    asignarPermisos: (id, permisos) => client.patch(`/api/admin/usuarios/${id}/permisos`, { permisos }).then(handle).catch(handleError),
   },
   auth: {
-    login: (email, password) =>
-      request('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
-    register: (data) =>
-      request('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-    me: () => request('/api/auth/me'),
-  },
-  setToken: (t) => {
-    authToken = t;
+    login: (email, password) => client.post('/api/auth/login', { email, password }).then(handle).catch(handleError),
+    register: (data) => client.post('/api/auth/register', data).then(handle).catch(handleError),
+    me: () => client.get('/api/auth/me').then(handle).catch(handleError),
   },
 };
+
+export default api;

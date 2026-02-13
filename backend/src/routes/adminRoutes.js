@@ -13,6 +13,7 @@ router.get('/summary', auth, panelAdmin, adminController.resumen);
 router.get('/usuarios', auth, gestionarUsuarios, adminController.listarUsuarios);
 router.patch('/usuarios/:id/role', auth, gestionarUsuarios, adminController.cambiarRol);
 router.patch('/usuarios/:id/permisos', auth, asignarPermisosMid, adminController.asignarPermisos);
+router.get('/session-logs', auth, panelAdmin, adminController.sessionLogs);
 
 module.exports = router;
 

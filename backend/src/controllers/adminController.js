@@ -1,5 +1,6 @@
 const AppDataSource = require('../config/database');
 const authController = require('./authController');
+const SessionLog = require('../models/SessionLog');
 
 const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
 const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
@@ -128,5 +129,18 @@ async function asignarPermisos(req, res) {
   }
 }
 
-module.exports = { resumen, listarUsuarios, cambiarRol, asignarPermisos };
+async function sessionLogs(req, res) {
+  try {
+    const { limit = 50, usuarioId, accion } = req.query;
+    const q = {};
+    if (usuarioId) q.usuarioId = usuarioId;
+    if (accion) q.accion = accion;
+    const logs = await SessionLog.find(q).sort({ fecha: -1 }).limit(parseInt(limit));
+    res.json({ count: logs.length, logs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+module.exports = { resumen, listarUsuarios, cambiarRol, asignarPermisos, sessionLogs };
 
