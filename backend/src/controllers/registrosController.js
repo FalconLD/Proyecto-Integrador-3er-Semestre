@@ -66,29 +66,80 @@ async function crear(req, res) {
       ? fechaValida
       : new Date();
     const fechaISOStr = fechaISO || fechaParaBD.toISOString();
+    // Formato DATE para SQL Server (YYYY-MM-DD)
+    const fechaSolo = fechaParaBD.toISOString().slice(0, 10);
+    const totalNum = parseInt(total);
+    const virtualTotalNum = virtualTotal !== undefined && virtualTotal !== null ? parseInt(virtualTotal) : null;
+    const detailsStr = details ? (typeof details === 'string' ? details : JSON.stringify(details)) : null;
 
     const repo = getRegistroRepo();
-    
-    const registro = repo.create({
-      usuarioId: idPropuesto,
-      fecha: fechaParaBD,
-      fechaISO: fechaISOStr,
-      total: parseInt(total),
-      virtualTotal: virtualTotal ? parseInt(virtualTotal) : null,
-      details: details ? JSON.stringify(details) : null,
-    });
+    let guardado = null;
 
-    const guardado = await repo.save(registro);
+    try {
+      // Inserción vía stored procedure (rúbrica BD + clases Proyecto_3P)
+      const sqlVirtual = virtualTotalNum === null ? 'NULL' : String(virtualTotalNum);
+      const sqlDetails = detailsStr === null ? 'NULL' : "'" + String(detailsStr).replace(/'/g, "''") + "'";
+      await AppDataSource.query(
+        `EXEC dbo.sp_InsertRegistroSeguroH2O @UsuarioId = ${idPropuesto}, @Fecha = '${fechaSolo}', @Total = ${totalNum}, @VirtualTotal = ${sqlVirtual}, @Details = ${sqlDetails}`
+      );
+      const rows = await AppDataSource.query(
+        `SELECT TOP 1 id, usuarioId, fecha, fechaISO, total, virtualTotal, details, createdAt
+         FROM dbo.registros_diarios
+         WHERE usuarioId = ${idPropuesto} AND CONVERT(date, fecha) = '${fechaSolo}'
+         ORDER BY id DESC`
+      );
+      guardado = rows && rows[0] ? {
+        id: rows[0].id,
+        usuarioId: rows[0].usuarioId,
+        fecha: rows[0].fecha,
+        fechaISO: rows[0].fechaISO,
+        total: rows[0].total,
+        virtualTotal: rows[0].virtualTotal,
+        details: rows[0].details,
+        createdAt: rows[0].createdAt,
+      } : null;
+    } catch (spError) {
+      const msg = spError && spError.message ? spError.message : String(spError);
+      if (msg.includes('Could not find stored procedure') || msg.includes('sp_InsertRegistroSeguroH2O')) {
+        console.warn('SP sp_InsertRegistroSeguroH2O no encontrado; usando repository.save(). Ejecute backend/sql/h2o_extras.sql en la BD.');
+        const registro = repo.create({
+          usuarioId: idPropuesto,
+          fecha: fechaParaBD,
+          fechaISO: fechaISOStr,
+          total: totalNum,
+          virtualTotal: virtualTotalNum,
+          details: detailsStr,
+        });
+        guardado = await repo.save(registro);
+      } else {
+        throw spError;
+      }
+    }
 
-    logAuditoria(usuarioId, 'registros_diarios', 'INSERT', `total=${total}`).catch(console.error);
-
+    if (!guardado) {
+      return res.status(201).json({
+        mensaje: 'Registro creado con sp_InsertRegistroSeguroH2O',
+        fecha: fechaParaBD.toLocaleDateString(),
+        fechaISO: fechaISOStr,
+        total: totalNum,
+        virtualTotal: virtualTotalNum,
+        details: details || null,
+      });
+    }
+    await logAuditoria(idPropuesto, 'registros_diarios', 'INSERT', `total=${total}`);
+    const detailsResp = (() => {
+      if (details != null) return typeof details === 'string' ? (() => { try { return JSON.parse(details); } catch (_) { return details; } })() : details;
+      if (guardado.details == null) return null;
+      if (typeof guardado.details === 'string') { try { return JSON.parse(guardado.details); } catch (_) { return guardado.details; } }
+      return guardado.details;
+    })();
     res.status(201).json({
       id: guardado.id,
       fecha: guardado.fecha ? new Date(guardado.fecha).toLocaleDateString() : new Date().toLocaleDateString(),
       fechaISO: guardado.fechaISO,
       total: guardado.total,
       virtualTotal: guardado.virtualTotal,
-      details: details,
+      details: detailsResp,
       createdAt: guardado.createdAt,
     });
 
