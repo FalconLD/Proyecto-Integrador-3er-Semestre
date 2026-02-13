@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { tienePermiso as tienePermisoUser, PERMISOS } from '../config/permisos';
 
 const AuthContext = createContext(null);
 
@@ -45,14 +46,6 @@ export function AuthProvider({ children }) {
     api.setToken(authToken);
   };
 
-  const setGuestUser = (userData) => {
-    setUser(userData);
-    setToken(null);
-    localStorage.removeItem(STORAGE_TOKEN);
-    localStorage.setItem(STORAGE_USER, JSON.stringify(userData));
-    api.setToken(null);
-  };
-
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -67,14 +60,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem(STORAGE_USER, JSON.stringify(merged));
   };
 
-  const tienePermiso = (permiso) => {
-    if (!user) return false;
-    if (user.role === 'admin') return true;
-    const permisos = user.permisos || [];
-    return Array.isArray(permisos) && permisos.includes(permiso);
-  };
+  const tienePermiso = (permiso) => tienePermisoUser(user, permiso);
 
   const puedeVerPanelAdmin = () =>
+    tienePermiso(PERMISOS.ADMIN_VER_PANEL) || tienePermiso(PERMISOS.ADMIN_VER_ESTADISTICAS) ||
     tienePermiso('ver_panel_admin') || tienePermiso('ver_estadisticas_avanzadas');
 
   return (
@@ -85,7 +74,6 @@ export function AuthProvider({ children }) {
         loading,
         setLoading,
         login,
-        setGuestUser,
         logout,
         updateUser,
         tienePermiso,

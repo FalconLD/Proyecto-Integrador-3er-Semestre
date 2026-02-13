@@ -5,14 +5,15 @@ export function useFormValidation(initialState, validateFn) {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Cambios en inputs
+  // Cambios en inputs: validación en tiempo real y marcar como tocado al escribir
   const handleChange = (field, value) => {
     const newValues = { ...values, [field]: value };
     setValues(newValues);
     setErrors(validateFn(newValues));
+    setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  // Marcar campo como tocado
+  // Marcar campo como tocado (por si se enfoca sin escribir)
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
@@ -36,9 +37,8 @@ export function useFormValidation(initialState, validateFn) {
     }
   };
 
-  const isValid =
-    Object.keys(errors).length === 0 &&
-    Object.keys(touched).length === Object.keys(values).length;
+  // Válido en tiempo real: sin errores de validación (no exige haber hecho blur en todos los campos)
+  const isValid = Object.keys(errors).length === 0;
 
   return {
     values,

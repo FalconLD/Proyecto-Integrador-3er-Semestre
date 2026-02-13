@@ -18,16 +18,18 @@ import {
   Shield,
 } from 'lucide-react';
 
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 import { api } from './services/api';
 import { useAuth } from './context/AuthContext';
 
-// Pages
+// Pages (AdminPage se monta en /admin vía router)
 import ProgressPage from './pages/ProgressPage';
 import RankingPage from './pages/RankingPage';
-import AdminPage from './pages/AdminPage';
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser, logout, puedeVerPanelAdmin } = useAuth();
 
   useEffect(() => {
@@ -36,27 +38,30 @@ function App() {
     }
   }, []);
 
-  // Sincronizar usuario invitado antiguo (sin id) con API
-  useEffect(() => {
-    if (!user?.email || user.id) return;
-    const email = user.email.endsWith('@puce.edu.ec') ? user.email : `${user.email}@puce.edu.ec`;
-    api.usuarios.getByEmail(email)
-      .then((u) => {
-        const full = { ...user, id: u.id, role: u.role || 'user', permisos: u.permisos || [] };
-        updateUser(full);
-      })
-      .catch(() => {});
-  }, [user?.email, user?.id]);
-
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const p = location.pathname;
+    if (p === '/progress') return 'progress';
+    if (p === '/ranking') return 'ranking';
+    if (p === '/info') return 'info';
+    return 'dashboard';
+  });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('h2o_theme');
     return saved ? saved === 'dark' : false;
   });
+
+  // Sincronizar pestaña con URL (deep links /progress, /ranking, /info)
+  useEffect(() => {
+    const p = location.pathname;
+    if (p === '/progress') setActiveTab('progress');
+    else if (p === '/ranking') setActiveTab('ranking');
+    else if (p === '/info') setActiveTab('info');
+    else if (p === '/') setActiveTab('dashboard');
+  }, [location.pathname]);
 
   // Cargar historial cuando hay usuario con id
   useEffect(() => {
@@ -152,6 +157,11 @@ function App() {
     return <WelcomeScreen />;
   }
 
+  // Usuario admin: ir directo al panel, no mostrar vista de usuario (calculadora, progreso, ranking)
+  if (puedeVerPanelAdmin() && location.pathname === '/') {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div className={`${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'} min-h-screen`}>
       <div className="max-w-6xl mx-auto p-4 md:p-10">
@@ -225,14 +235,10 @@ function App() {
           {puedeVerPanelAdmin() && (
             <button
               onClick={() => {
-                setActiveTab('admin');
                 setIsFormOpen(false);
+                navigate('/admin');
               }}
-              className={`p-2 rounded-lg transition-all ${
-                activeTab === 'admin'
-                  ? 'bg-blue-50 text-blue-600 shadow-inner'
-                  : 'text-slate-400 hover:bg-slate-50'
-              }`}
+              className="p-2 rounded-lg transition-all text-slate-400 hover:bg-slate-50 hover:text-blue-600"
               title="Panel administrador"
             >
               <Shield size={20} />
@@ -310,10 +316,6 @@ function App() {
 
         {activeTab === 'ranking' && (
           <RankingPage user={user} history={history} />
-        )}
-
-        {activeTab === 'admin' && (
-          <AdminPage />
         )}
 
         {activeTab === 'info' && (

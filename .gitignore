@@ -27,3 +27,4 @@ dist-ssr
 # Environment variables (credenciales)
 .env
 backend/.env
+frontend/.env

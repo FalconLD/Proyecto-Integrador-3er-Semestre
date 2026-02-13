@@ -45,16 +45,30 @@ export const api = {
   admin: {
     getSummary: () => request('/api/admin/summary'),
     getUsuarios: () => request('/api/admin/usuarios'),
-    cambiarRol: (id, role) =>
+    cambiarRol: (id, payload) =>
       request(`/api/admin/usuarios/${id}/role`, {
         method: 'PATCH',
-        body: JSON.stringify({ role }),
+        body: JSON.stringify(typeof payload === 'object' ? payload : { role: payload }),
       }),
     asignarPermisos: (id, permisos) =>
       request(`/api/admin/usuarios/${id}/permisos`, {
         method: 'PATCH',
         body: JSON.stringify({ permisos }),
       }),
+    getPermisosCatalogo: () => request('/api/admin/permisos-catalogo'),
+    createPermiso: (data) =>
+      request('/api/admin/permisos-catalogo', { method: 'POST', body: JSON.stringify(data) }),
+    updatePermiso: (id, data) =>
+      request(`/api/admin/permisos-catalogo/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deletePermiso: (id) =>
+      request(`/api/admin/permisos-catalogo/${id}`, { method: 'DELETE' }),
+    getRoles: () => request('/api/admin/roles'),
+    createRole: (data) =>
+      request('/api/admin/roles', { method: 'POST', body: JSON.stringify(data) }),
+    updateRole: (id, data) =>
+      request(`/api/admin/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteRole: (id) =>
+      request(`/api/admin/roles/${id}`, { method: 'DELETE' }),
   },
   auth: {
     login: (email, password) =>

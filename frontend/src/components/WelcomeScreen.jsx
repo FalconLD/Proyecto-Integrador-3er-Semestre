@@ -3,11 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Droplet,
   ArrowRight,
-  CheckCircle,
-  XCircle,
   UserPlus,
   LogIn,
-  User,
 } from 'lucide-react';
 import { useFormValidation } from '../utils/useFormValidation';
 import { useAuth } from '../context/AuthContext';
@@ -15,11 +12,10 @@ import { api } from '../services/api';
 import { Toaster, toast } from 'sonner';
 import '../index.css';
 
-const MODE_GUEST = 'guest';
 const MODE_LOGIN = 'login';
 const MODE_REGISTER = 'register';
 
-const validateGuest = (data) => {
+const validateRegisterPersonal = (data) => {
   const errors = {};
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!data.nombre || data.nombre.trim().length < 2) {
@@ -48,7 +44,7 @@ const validateLogin = (data) => {
 };
 
 const validateRegister = (data) => {
-  const errors = { ...validateGuest(data) };
+  const errors = { ...validateRegisterPersonal(data) };
   if (!data.password || data.password.length < 6) {
     errors.password = 'Contraseña mínima 6 caracteres';
   }
@@ -59,8 +55,8 @@ const validateRegister = (data) => {
 };
 
 export default function WelcomeScreen() {
-  const { setGuestUser, login, setLoading } = useAuth();
-  const [mode, setMode] = useState(MODE_GUEST);
+  const { login, setLoading } = useAuth();
+  const [mode, setMode] = useState(MODE_LOGIN);
   const [loading, setLoadingState] = useState(false);
 
   const doLoading = (v) => {
@@ -68,10 +64,6 @@ export default function WelcomeScreen() {
     setLoading?.(v);
   };
 
-  const guestForm = useFormValidation(
-    { nombre: '', edad: '', email: '' },
-    validateGuest
-  );
   const loginForm = useFormValidation(
     { email: '', password: '' },
     validateLogin
@@ -81,51 +73,11 @@ export default function WelcomeScreen() {
     validateRegister
   );
 
-  const shake = { x: [0, -8, 8, -6, 6, -3, 3, 0], transition: { duration: 0.4 } };
-  const pop = {
-    initial: { scale: 0, opacity: 0 },
-    animate: { scale: 1, opacity: 1 },
-    exit: { scale: 0.5, opacity: 0 },
-    transition: { type: 'spring', stiffness: 400, damping: 20 },
-  };
-
   const inputState = (form, field) => {
     if (!form.touched[field]) return 'border-slate-200';
     return form.errors[field]
       ? 'border-red-400 focus:ring-red-100'
       : 'border-slate-300 focus:ring-slate-200';
-  };
-
-  const shouldShake = (form, field) => form.touched[field] && form.errors[field];
-
-  const handleGuestSubmit = async (values) => {
-    doLoading(true);
-    try {
-      const email = values.email.includes('@') ? values.email : `${values.email}@puce.edu.ec`;
-      let userData;
-      try {
-        userData = await api.usuarios.getByEmail(email);
-      } catch {
-        userData = await api.usuarios.create({
-          nombre: values.nombre.trim(),
-          email,
-          edad: parseInt(values.edad, 10),
-        });
-      }
-      const u = {
-        id: userData.id,
-        nombre: userData.nombre,
-        email: userData.email,
-        edad: userData.edad,
-        role: 'user',
-        permisos: [],
-      };
-      setGuestUser(u);
-    } catch (err) {
-      toast.error('Error al entrar', { description: err.message });
-    } finally {
-      doLoading(false);
-    }
   };
 
   const handleLoginSubmit = async (values) => {
@@ -179,17 +131,8 @@ export default function WelcomeScreen() {
           WaterMark
         </h1>
 
-        {/* Tabs */}
+        {/* Tabs: Entrar | Registrarse */}
         <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
-          <button
-            type="button"
-            onClick={() => setMode(MODE_GUEST)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition ${
-              mode === MODE_GUEST ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <User size={16} /> Invitado
-          </button>
           <button
             type="button"
             onClick={() => setMode(MODE_LOGIN)}
@@ -211,89 +154,6 @@ export default function WelcomeScreen() {
         </div>
 
         <AnimatePresence mode="wait">
-          {mode === MODE_GUEST && (
-            <motion.form
-              key="guest"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              onSubmit={guestForm.handleSubmit(handleGuestSubmit)}
-              className="space-y-5"
-            >
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
-                <motion.div animate={shouldShake(guestForm, 'nombre') ? shake : {}} className="relative">
-                  <input
-                    placeholder="Tu nombre"
-                    value={guestForm.values.nombre}
-                    onChange={(e) => guestForm.handleChange('nombre', e.target.value)}
-                    onBlur={() => guestForm.handleBlur('nombre')}
-                    className={`w-full p-4 rounded-xl bg-white border text-slate-700 placeholder:text-slate-400 focus:ring-2 outline-none transition ${inputState(guestForm, 'nombre')}`}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <AnimatePresence>
-                      {guestForm.touched.nombre && guestForm.values.nombre && guestForm.errors.nombre && (
-                        <motion.div {...pop}><XCircle className="text-red-500" size={20} /></motion.div>
-                      )}
-                      {guestForm.touched.nombre && guestForm.values.nombre && !guestForm.errors.nombre && (
-                        <motion.div {...pop}><CheckCircle className="text-green-500" size={20} /></motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-                {guestForm.touched.nombre && guestForm.errors.nombre && (
-                  <p className="text-xs text-red-500 mt-1">{guestForm.errors.nombre}</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Edad</label>
-                  <motion.div animate={shouldShake(guestForm, 'edad') ? shake : {}}>
-                    <input
-                      type="number"
-                      placeholder="21"
-                      value={guestForm.values.edad}
-                      onChange={(e) => guestForm.handleChange('edad', e.target.value)}
-                      onBlur={() => guestForm.handleBlur('edad')}
-                      className={`w-full p-4 rounded-xl bg-white border text-slate-700 placeholder:text-slate-400 focus:ring-2 outline-none transition no-spinners ${inputState(guestForm, 'edad')}`}
-                    />
-                  </motion.div>
-                  {guestForm.touched.edad && guestForm.errors.edad && (
-                    <p className="text-xs text-red-500 mt-1">{guestForm.errors.edad}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Correo</label>
-                  <motion.div animate={shouldShake(guestForm, 'email') ? shake : {}}>
-                    <input
-                      type="email"
-                      placeholder="correo@ejemplo.com"
-                      value={guestForm.values.email}
-                      onChange={(e) => guestForm.handleChange('email', e.target.value)}
-                      onBlur={() => guestForm.handleBlur('email')}
-                      className={`w-full p-4 rounded-xl bg-white border text-slate-700 placeholder:text-slate-400 focus:ring-2 outline-none transition ${inputState(guestForm, 'email')}`}
-                    />
-                  </motion.div>
-                  {guestForm.touched.email && guestForm.errors.email && (
-                    <p className="text-xs text-red-500 mt-1">{guestForm.errors.email}</p>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-slate-500">Modo invitado: sin contraseña. Los datos se guardan en la app.</p>
-              <button
-                type="submit"
-                disabled={!guestForm.isValid || loading}
-                className={`w-full py-4 rounded-2xl font-semibold text-white shadow-md transition-all ${
-                  guestForm.isValid && !loading
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-[1.02]'
-                    : 'bg-slate-300 cursor-not-allowed'
-                }`}
-              >
-                {loading ? 'Conectando…' : 'Entrar como invitado'} <ArrowRight className="inline ml-2" size={18} />
-              </button>
-            </motion.form>
-          )}
-
           {mode === MODE_LOGIN && (
             <motion.form
               key="login"
