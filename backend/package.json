@@ -6,9 +6,10 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "dev": "node scripts/kill-port.js && nodemon --quiet src/server.js",
     "seed": "node src/seed/seedDemoData.js",
     "clean": "node src/seed/cleanDatabase.js",
+    "clean-mongo": "node src/seed/cleanMongoLogs.js",
     "run-extras": "node src/seed/runH2oExtras.js"
   },
   "dependencies": {
