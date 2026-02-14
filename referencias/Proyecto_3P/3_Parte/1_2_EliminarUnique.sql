@@ -1,3 +1,0 @@
-ALTER TABLE dbo.Usuario
-DROP CONSTRAINT UQ_Usuario_Email;
-GO
