@@ -1,6 +1,4 @@
-const AppDataSource = require('../config/database');
-
-const getPermisoRepo = () => AppDataSource.getRepository('PermisoCatalogo');
+const { getPermisoRepo } = require('../repositories');
 
 async function listar(req, res) {
   try {

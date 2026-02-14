@@ -1,5 +1,11 @@
 require('reflect-metadata');
 require('dotenv').config();
+
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('  ❌ [backend] JWT_SECRET es obligatorio en producción. Configure la variable de entorno.');
+  process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');

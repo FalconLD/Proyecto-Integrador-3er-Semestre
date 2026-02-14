@@ -1,11 +1,8 @@
 const mongoose = require('mongoose');
 
 const sessionLogSchema = new mongoose.Schema({
-  usuarioId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Usuario', 
-    default: null 
-  },
+  // ID numérico del usuario en Azure SQL (no ref: Usuario está en otra BD)
+  usuarioId: { type: Number, default: null },
   
   accion: { 
     type: String, 

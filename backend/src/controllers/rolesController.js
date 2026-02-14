@@ -1,8 +1,5 @@
-const AppDataSource = require('../config/database');
 const { In } = require('typeorm');
-
-const getRoleRepo = () => AppDataSource.getRepository('Role');
-const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
+const { getRoleRepo, getUsuarioRepo, getPermisoRepo } = require('../repositories');
 
 async function listar(req, res) {
   try {
@@ -112,7 +109,7 @@ async function eliminar(req, res) {
 
 async function syncPermisos(roleId, permisoIds) {
   const roleRepo = getRoleRepo();
-  const permisoRepo = AppDataSource.getRepository('PermisoCatalogo');
+  const permisoRepo = getPermisoRepo();
   const role = await roleRepo.findOne({ where: { id: roleId }, relations: ['permisos'] });
   if (!role) return;
   const ids = permisoIds.filter((id) => Number.isInteger(Number(id))).map((id) => parseInt(id, 10));

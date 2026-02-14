@@ -1,12 +1,8 @@
-const AppDataSource = require('../config/database');
 const mongoose = require('mongoose');
 const RankingEntry = require('../models/RankingEntry');
+const authController = require('./authController');
 const { tienePermiso, PERMISOS } = require('../config/permisos');
-
-const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
-const getAuditoriaRepo = () => AppDataSource.getRepository('Auditoria');
-const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
-const getSemanalRepo = () => AppDataSource.getRepository('RegistroSemanal');
+const { getUsuarioRepo, getAuditoriaRepo, getRegistroRepo, getSemanalRepo } = require('../repositories');
 
 function puedeGestionarUsuarios(usuario) {
   return usuario && (usuario.role === 'admin' || tienePermiso(usuario, PERMISOS.USUARIOS_LISTAR) || tienePermiso(usuario, PERMISOS.ADMIN_VER_PANEL));
@@ -27,8 +23,9 @@ async function obtenerTodos(req, res) {
       return res.status(403).json({ error: 'No tienes permiso para listar usuarios' });
     }
     const repo = getUsuarioRepo();
-    const usuarios = await repo.find({ order: { id: 'ASC' } });
-    res.json(usuarios);
+    const usuarios = await repo.find({ order: { id: 'ASC' }, relations: ['rol', 'rol.permisos'] });
+    const safe = usuarios.map((u) => authController.toSafeUser(u));
+    res.json(safe);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
@@ -43,9 +40,9 @@ async function obtenerPorId(req, res) {
       return res.status(403).json({ error: 'Solo puedes ver tu propio perfil' });
     }
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { id: idNum } });
+    const usuario = await repo.findOne({ where: { id: idNum }, relations: ['rol', 'rol.permisos'] });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json(usuario);
+    res.json(authController.toSafeUser(usuario));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -59,9 +56,9 @@ async function obtenerPorEmail(req, res) {
       return res.status(403).json({ error: 'Solo puedes consultar tu propio perfil' });
     }
     const repo = getUsuarioRepo();
-    const usuario = await repo.findOne({ where: { email: emailDecoded } });
+    const usuario = await repo.findOne({ where: { email: emailDecoded }, relations: ['rol', 'rol.permisos'] });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json(usuario);
+    res.json(authController.toSafeUser(usuario));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -88,7 +85,8 @@ async function crear(req, res) {
     });
     const guardado = await repo.save(usuario);
     await logAuditoria(guardado.id, 'usuarios', 'INSERT', JSON.stringify({ nombre, email }));
-    res.status(201).json(guardado);
+    const withRelations = await repo.findOne({ where: { id: guardado.id }, relations: ['rol', 'rol.permisos'] });
+    res.status(201).json(authController.toSafeUser(withRelations || guardado));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -111,7 +109,8 @@ async function actualizar(req, res) {
     if (modo_oscuro !== undefined) usuario.modo_oscuro = modo_oscuro ? 1 : 0;
     const actualizado = await repo.save(usuario);
     await logAuditoria(usuario.id, 'usuarios', 'UPDATE', JSON.stringify(req.body));
-    res.json(actualizado);
+    const withRelations = await repo.findOne({ where: { id: actualizado.id }, relations: ['rol', 'rol.permisos'] });
+    res.json(authController.toSafeUser(withRelations || actualizado));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

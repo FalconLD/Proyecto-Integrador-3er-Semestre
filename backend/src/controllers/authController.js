@@ -1,11 +1,9 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const AppDataSource = require('../config/database');
 const { getPermisosEfectivos } = require('../config/permisos');
 const SessionLog = require('../models/SessionLog');
-
-const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
+const { getUsuarioRepo } = require('../repositories');
 
 function parsePermisos(permisosStr) {
   if (!permisosStr) return [];

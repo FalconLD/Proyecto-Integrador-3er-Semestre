@@ -1,7 +1,5 @@
 const jwt = require('jsonwebtoken');
-const AppDataSource = require('../config/database');
-
-const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
+const { getUsuarioRepo } = require('../repositories');
 
 async function auth(req, res, next) {
   try {

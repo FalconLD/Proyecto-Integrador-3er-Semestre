@@ -1,9 +1,7 @@
-const AppDataSource = require('../config/database');
 const mongoose = require('mongoose');
 const RankingEntry = require('../models/RankingEntry');
 const { tienePermiso } = require('../config/permisos');
-
-const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
+const { getRegistroRepo } = require('../repositories');
 
 function puedeVerRachasDeOtro(usuario) {
   if (!usuario) return false;

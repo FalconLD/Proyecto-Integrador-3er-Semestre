@@ -1,10 +1,7 @@
 const AppDataSource = require('../config/database');
 const authController = require('./authController');
 const SessionLog = require('../models/SessionLog');
-
-const getUsuarioRepo = () => AppDataSource.getRepository('Usuario');
-const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
-const getRoleRepo = () => AppDataSource.getRepository('Role');
+const { getUsuarioRepo, getRegistroRepo, getRoleRepo } = require('../repositories');
 
 async function resumen(req, res) {
   try {

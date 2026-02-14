@@ -1,9 +1,6 @@
 const AppDataSource = require('../config/database');
 const { tienePermiso, PERMISOS } = require('../config/permisos');
-
-const getRegistroRepo = () => AppDataSource.getRepository('RegistroDiario');
-const getSemanalRepo = () => AppDataSource.getRepository('RegistroSemanal');
-const getAuditoriaRepo = () => AppDataSource.getRepository('Auditoria');
+const { getRegistroRepo, getSemanalRepo, getAuditoriaRepo } = require('../repositories');
 
 function puedeVerRegistrosDeOtro(usuario) {
   return usuario && (usuario.role === 'admin' || tienePermiso(usuario, PERMISOS.REGISTROS_VER_TODOS));

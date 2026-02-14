@@ -1,6 +1,7 @@
 require('dotenv').config();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const AppDataSource = require('../config/database');
+const { getUsuarioRepo, getRegistroRepo, getPermisoRepo, getRoleRepo } = require('../repositories');
 const { LISTA_PERMISOS } = require('../config/permisos');
 
 async function run() {
@@ -8,10 +9,10 @@ async function run() {
     await AppDataSource.initialize();
     console.log('Conectado a Azure SQL para seeders');
 
-    const usuarioRepo = AppDataSource.getRepository('Usuario');
-    const registroRepo = AppDataSource.getRepository('RegistroDiario');
-    const permisoRepo = AppDataSource.getRepository('PermisoCatalogo');
-    const roleRepo = AppDataSource.getRepository('Role');
+    const usuarioRepo = getUsuarioRepo();
+    const registroRepo = getRegistroRepo();
+    const permisoRepo = getPermisoRepo();
+    const roleRepo = getRoleRepo();
 
     // 1. Catálogo de permisos (crear si no existen)
     for (const nombre of LISTA_PERMISOS) {
