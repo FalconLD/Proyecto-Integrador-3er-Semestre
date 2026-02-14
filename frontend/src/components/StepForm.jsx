@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence, m } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Clock,
@@ -9,10 +9,11 @@ import {
   ChevronLeft,
   Save,
   Utensils,
-  WashingMachine
+  WashingMachine,
+  Loader,
 } from 'lucide-react';
 
-export default function StepForm({ onSave, onCancel }) {
+export default function StepForm({ onSave, onCancel, saving = false }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     people: 1,
@@ -52,9 +53,16 @@ export default function StepForm({ onSave, onCancel }) {
     });
   };
 
-  const handleNumberInput = (key, value) => {
-    // Evitar que quede cero pegado y permitir borrar
-    setFormData({ ...formData, [key]: value === '' ? '' : Number(value) });
+  const clamp = (num, minVal, maxVal) => Math.max(minVal, Math.min(maxVal, num));
+  const handleNumberInput = (key, value, minVal = 0, maxVal = 999) => {
+    if (value === '') {
+      setFormData({ ...formData, [key]: '' });
+      return;
+    }
+    const num = Number(value);
+    if (isNaN(num)) return;
+    const clamped = clamp(num, minVal, maxVal);
+    setFormData({ ...formData, [key]: clamped });
   };
 
   return (
@@ -65,12 +73,15 @@ export default function StepForm({ onSave, onCancel }) {
     >
       {/* Barra de pasos */}
       <div className="mb-10 flex justify-between items-center">
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className={`h-2 w-10 rounded-full transition-all ${step >= i ? 'bg-blue-600' : 'bg-slate-200'}`} />
-          ))}
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-500">Paso {step} de 5</span>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className={`h-2 w-10 rounded-full transition-all ${step >= i ? 'bg-blue-600' : 'bg-slate-200'}`} />
+            ))}
+          </div>
         </div>
-        <button type="button" onClick={onCancel} className="text-slate-400 hover:text-red-500 font-bold text-sm transition-all">Cancelar</button>
+        <button type="button" onClick={onCancel} className="text-slate-600 font-semibold hover:text-red-500 text-sm transition-all px-3 py-2 rounded-lg border border-slate-200 hover:border-red-200">Cancelar</button>
       </div>
 
       <AnimatePresence mode="wait">
@@ -102,8 +113,10 @@ export default function StepForm({ onSave, onCancel }) {
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Minutos en la ducha</label>
                 <input
                   type="number"
+                  min={0}
+                  max={60}
                   value={formData.showerTime}
-                  onChange={e => handleNumberInput('showerTime', e.target.value)}
+                  onChange={e => handleNumberInput('showerTime', e.target.value, 0, 60)}
                   className="w-full p-6 bg-slate-50 rounded-2xl text-center text-4xl font-extrabold text-blue-700 border-2 border-transparent focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                 />
               </div>
@@ -135,8 +148,10 @@ export default function StepForm({ onSave, onCancel }) {
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Descargas de inodoro al día</label>
                 <input
                   type="number"
+                  min={0}
+                  max={50}
                   value={formData.flushesPerDay}
-                  onChange={e => handleNumberInput('flushesPerDay', e.target.value)}
+                  onChange={e => handleNumberInput('flushesPerDay', e.target.value, 0, 50)}
                   className="w-full p-6 bg-slate-50 rounded-2xl text-center text-3xl font-extrabold text-blue-700 border-2 border-transparent focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                 />
               </div>
@@ -189,8 +204,10 @@ export default function StepForm({ onSave, onCancel }) {
                 <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Tazas Café</label>
                 <input
                   type="number"
+                  min={0}
+                  max={20}
                   value={formData.coffeeTazas}
-                  onChange={e => handleNumberInput('coffeeTazas', e.target.value)}
+                  onChange={e => handleNumberInput('coffeeTazas', e.target.value, 0, 20)}
                   className="bg-transparent text-center text-3xl font-extrabold text-blue-700 outline-none w-full"
                 />
               </div>
@@ -198,8 +215,10 @@ export default function StepForm({ onSave, onCancel }) {
                 <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">Tazas Té</label>
                 <input
                   type="number"
+                  min={0}
+                  max={20}
                   value={formData.teaTazas}
-                  onChange={e => handleNumberInput('teaTazas', e.target.value)}
+                  onChange={e => handleNumberInput('teaTazas', e.target.value, 0, 20)}
                   className="bg-transparent text-center text-3xl font-extrabold text-blue-700 outline-none w-full"
                 />
               </div>
@@ -210,8 +229,10 @@ export default function StepForm({ onSave, onCancel }) {
                 <input
                   type="number"
                   step="0.5"
+                  min={0}
+                  max={50}
                   value={formData.waterDrinking}
-                  onChange={e => handleNumberInput('waterDrinking', e.target.value)}
+                  onChange={e => handleNumberInput('waterDrinking', e.target.value, 0, 50)}
                   className="bg-transparent text-center text-6xl font-extrabold text-blue-700 outline-none w-full"
                 />
               </div>
@@ -231,8 +252,14 @@ export default function StepForm({ onSave, onCancel }) {
             <span>Siguiente</span> <ChevronRight size={24} />
           </button>
         ) : (
-          <button type="button" onClick={handleFinish} className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-3xl font-bold flex items-center gap-3 shadow-xl shadow-emerald-200 transition-all active:scale-95 h-full">
-            <Save size={24} /> <span>Finalizar Análisis</span>
+          <button
+            type="button"
+            onClick={handleFinish}
+            disabled={saving}
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 disabled:cursor-not-allowed text-white px-10 py-4 rounded-3xl font-bold flex items-center gap-3 shadow-xl shadow-emerald-200 transition-all active:scale-95 h-full"
+          >
+            {saving ? <Loader size={24} className="animate-spin" /> : <Save size={24} />}
+            <span>{saving ? 'Guardando…' : 'Finalizar Análisis'}</span>
           </button>
         )}
       </div>

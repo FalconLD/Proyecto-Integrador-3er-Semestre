@@ -19,7 +19,7 @@ export default function AchievementsUltraSoftPremium({ history }) {
     : 0;
 
   const badges = [
-    { id: 'primero', name: 'Eco-Estudiante', desc: 'Realizaste tu primer análisis en H2O.Impact', unlocked: totalRecords >= 1, icon: <Droplet className="text-blue-500" />, gradient: 'bg-gradient-to-br from-blue-100 to-blue-200' },
+    { id: 'primero', name: 'Eco-Estudiante', desc: 'Realizaste tu primer análisis en WaterMark', unlocked: totalRecords >= 1, icon: <Droplet className="text-blue-500" />, gradient: 'bg-gradient-to-br from-blue-100 to-blue-200' },
     { id: 'guerrero', name: 'Guerrero H2O', desc: 'Lograste un consumo menor a 150L el día de hoy', unlocked: lastRecord?.total > 0 && lastRecord?.total <= DAILY_GOAL, icon: <ShieldCheck className="text-green-500" />, gradient: 'bg-gradient-to-br from-green-100 to-green-200' },
     { id: 'ducha_pro', name: 'Ducha Relámpago', desc: 'Tu última ducha duró 5 minutos o menos', unlocked: lastRecord?.details?.showerTime <= 5, icon: <Clock className="text-cyan-500" />, gradient: 'bg-gradient-to-br from-cyan-100 to-cyan-200' },
     { id: 'cero_goteo', name: 'Cero Desperdicio', desc: 'Cierras el grifo al cepillarte y cumpliste la meta', unlocked: lastRecord?.details?.keyQuestionAnswer === 'No' && lastRecord?.total <= DAILY_GOAL, icon: <CheckCircle className="text-indigo-500" />, gradient: 'bg-gradient-to-br from-indigo-100 to-indigo-200' },

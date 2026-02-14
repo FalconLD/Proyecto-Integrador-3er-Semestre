@@ -217,7 +217,7 @@ export default function WelcomeScreen() {
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
                 <input
-                  placeholder="Tu nombre"
+                  placeholder="Ej. María"
                   value={registerForm.values.nombre}
                   onChange={(e) => registerForm.handleChange('nombre', e.target.value)}
                   onBlur={() => registerForm.handleBlur('nombre')}

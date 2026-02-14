@@ -87,7 +87,7 @@ export default function Ranking({ ranking, userPosition, campusAvg }) {
             className="flex justify-between items-center bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 transition-all cursor-pointer"
           >
             <span className="font-bold text-slate-700">
-              #{idx + 1} Usuario #{u.id.slice(0, 4)}
+              #{idx + 1} Anónimo
             </span>
             <span className="font-extrabold text-emerald-600">
               {u.avgConsumption} L

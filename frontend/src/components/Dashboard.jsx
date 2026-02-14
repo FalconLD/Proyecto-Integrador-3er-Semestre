@@ -11,14 +11,14 @@ import {
   Legend, 
   Filler 
 } from 'chart.js';
-import { Trophy, TrendingDown, TrendingUp, Calendar } from 'lucide-react';
+import { Trophy, TrendingDown, TrendingUp, Calendar, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
 );
 
-export default function DashboardPremium({ history }) {
+export default function DashboardPremium({ history, onDeleteRegistro }) {
   const [animatedData, setAnimatedData] = useState([]);
   const [trendColors, setTrendColors] = useState([]);
 
@@ -168,21 +168,32 @@ export default function DashboardPremium({ history }) {
           </div>
           <ul className="space-y-2">
             {history.slice(0, 5).map((item, idx) => {
-              const prev = idx > 0 ? history[idx-1].total : item.total;
+              const prev = idx > 0 ? history[idx - 1].total : item.total;
               const diff = item.total - prev;
               return (
-                <li 
-                  key={idx} 
-                  className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 hover:bg-slate-50 rounded transition-colors"
+                <li
+                  key={item.id ?? idx}
+                  className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 hover:bg-slate-50 rounded transition-colors group"
                 >
                   <span className="text-slate-500">{item.fecha}</span>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <span className="font-semibold text-blue-600">{item.total}L</span>
                     {diff > 0 && <TrendingUp className="text-green-400" size={16} />}
                     {diff < 0 && <TrendingDown className="text-red-400" size={16} />}
+                    {onDeleteRegistro && item.id != null && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteRegistro(item.id)}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-80 hover:opacity-100 transition-opacity"
+                        title="Eliminar registro"
+                        aria-label="Eliminar registro"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </li>
-              )
+              );
             })}
           </ul>
         </motion.div>

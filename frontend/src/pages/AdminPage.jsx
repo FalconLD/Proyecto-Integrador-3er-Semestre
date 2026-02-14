@@ -14,6 +14,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -36,12 +37,23 @@ export default function AdminPage({ defaultVista }) {
     if (pathname === "/admin/usuarios") return "usuarios";
     return "resumen";
   });
+  const [sessionLogs, setSessionLogs] = useState({ count: 0, logs: [] });
+  const [loadingSessionLogs, setLoadingSessionLogs] = useState(false);
   useEffect(() => {
     if (pathname === "/admin/permisos") setVista("permisos");
     else if (pathname === "/admin/roles") setVista("roles");
     else if (pathname === "/admin/usuarios") setVista("usuarios");
     else if (pathname === "/admin") setVista("resumen");
   }, [pathname]);
+  useEffect(() => {
+    if (vista !== "logs") return;
+    setLoadingSessionLogs(true);
+    api.admin
+      .getSessionLogs({ limit: 100 })
+      .then((res) => setSessionLogs(res || { count: 0, logs: [] }))
+      .catch(() => setSessionLogs({ count: 0, logs: [] }))
+      .finally(() => setLoadingSessionLogs(false));
+  }, [vista]);
   const [roles, setRoles] = useState([]);
   const [permisosCatalogo, setPermisosCatalogo] = useState([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
@@ -212,6 +224,17 @@ export default function AdminPage({ defaultVista }) {
           </button>
           <button
             type="button"
+            onClick={() => setVista("logs")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition border-2 ${
+              vista === "logs"
+                ? "bg-sky-500 text-white border-sky-500 shadow-md"
+                : "bg-slate-50 text-slate-600 border-slate-200 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+            }`}
+          >
+            <ClipboardList size={20} /> Logs de sesión
+          </button>
+          <button
+            type="button"
             onClick={() => setVista("permisos")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition border-2 ${
               vista === "permisos"
@@ -247,6 +270,14 @@ export default function AdminPage({ defaultVista }) {
           )}
         </div>
       </div>
+
+      {/* VISTA LOGS DE SESIÓN */}
+      {vista === "logs" && (
+        <VistaSessionLogs logs={sessionLogs.logs} count={sessionLogs.count} loading={loadingSessionLogs} onReload={() => {
+          setLoadingSessionLogs(true);
+          api.admin.getSessionLogs({ limit: 100 }).then((res) => setSessionLogs(res || { count: 0, logs: [] })).catch(() => setSessionLogs({ count: 0, logs: [] })).finally(() => setLoadingSessionLogs(false));
+        }} />
+      )}
 
       {/* VISTA PERMISOS */}
       {vista === "permisos" && (
@@ -444,131 +475,22 @@ export default function AdminPage({ defaultVista }) {
         </motion.div>
       </div>
 
-      {/* GESTIÓN DE USUARIOS */}
       {puedeGestionar && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 shadow-md border border-slate-100"
+          className="bg-white rounded-3xl p-4 shadow-md border border-slate-100 flex items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-3 mb-4">
-            <UserCog className="text-sky-500" size={22} />
-            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Gestión de usuarios
-            </h3>
-          </div>
-
-          {loadingUsuarios ? (
-            <p className="text-slate-500 py-4">Cargando usuarios…</p>
-          ) : usuarios.length === 0 ? (
-            <p className="text-slate-500 py-4">No hay usuarios.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                      Nombre
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                      Email
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                      Edad
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                      Rol
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                      Permisos
-                    </th>
-                    {(puedeGestionar || puedeAsignarPermisos) && (
-                      <th className="text-left py-3 px-2 font-semibold text-slate-600">
-                        Acciones
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {usuarios.map((u) => (
-                    <tr
-                      key={u.id}
-                      className="border-b border-slate-100 hover:bg-slate-50"
-                    >
-                      <td className="py-3 px-2 font-medium text-slate-800">
-                        {u.nombre}
-                      </td>
-                      <td className="py-3 px-2 text-slate-600">{u.email}</td>
-                      <td className="py-3 px-2 text-slate-600">{u.edad}</td>
-                      <td className="py-3 px-2">
-                        {puedeEditarRol && roles.length > 0 ? (
-                          <select
-                            value={u.roleId ?? (u.role === "admin" || u.role === "Administrador" ? roles.find((r) => r.nombre === "Administrador")?.id : roles.find((r) => r.nombre === "Usuario")?.id) ?? ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val) handleCambiarRol(u.id, { roleId: parseInt(val, 10) });
-                            }}
-                            className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white"
-                          >
-                            {roles.map((r) => (
-                              <option key={r.id} value={r.id}>{r.nombre}</option>
-                            ))}
-                          </select>
-                        ) : puedeEditarRol ? (
-                          <span className="text-slate-400 text-xs">Cargando roles…</span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              u.role === "admin" || u.role === "Administrador"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            <Shield size={12} className={u.role === "admin" || u.role === "Administrador" ? "" : "opacity-50"} />
-                            {u.role || "user"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-2">
-                        {editandoPermisos === u.id && puedeAsignarPermisos ? (
-                          <PermisosEditor
-                            permisos={u.permisos || []}
-                            permisosPorGrupo={PERMISOS_POR_GRUPO}
-                            onGuardar={(p) => handleGuardarPermisos(u.id, p)}
-                            onCancelar={() => setEditandoPermisos(null)}
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-600 text-xs">
-                              {(u.permisos || []).length > 0
-                                ? (u.permisos || []).join(", ")
-                                : "—"}
-                            </span>
-                            {puedeAsignarPermisos && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setEditandoPermisos(
-                                    editandoPermisos === u.id ? null : u.id
-                                  )
-                                }
-                                className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                              >
-                                Editar
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      {(puedeGestionar || puedeAsignarPermisos) && (
-                        <td className="py-3 px-2" />
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <p className="text-sm text-slate-600">
+            Para gestionar usuarios, roles y permisos, usa la pestaña <strong>Usuarios</strong> o <strong>Roles</strong> arriba.
+          </p>
+          <button
+            type="button"
+            onClick={() => setVista("usuarios")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-white hover:bg-sky-600"
+          >
+            <Users size={18} /> Ir a Usuarios
+          </button>
         </motion.div>
       )}
 
@@ -645,6 +567,60 @@ export default function AdminPage({ defaultVista }) {
         </>
       )}
     </motion.section>
+  );
+}
+
+function VistaSessionLogs({ logs, count, loading, onReload }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+      <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-slate-800">Logs de sesión (MongoDB)</h2>
+        <div className="flex gap-2 items-center">
+          <span className="text-sm text-slate-500">{count} registros</span>
+          <button type="button" onClick={onReload} className="text-sm px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50">
+            Actualizar
+          </button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        {loading ? (
+          <p className="p-6 text-slate-500">Cargando logs…</p>
+        ) : !logs || logs.length === 0 ? (
+          <p className="p-6 text-slate-500">No hay logs de sesión.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left py-3 px-4 font-medium text-slate-600">Fecha</th>
+                <th className="text-left py-3 px-4 font-medium text-slate-600">Acción</th>
+                <th className="text-left py-3 px-4 font-medium text-slate-600">Usuario ID</th>
+                <th className="text-left py-3 px-4 font-medium text-slate-600">IP</th>
+                <th className="text-left py-3 px-4 font-medium text-slate-600 max-w-[200px] truncate">Detalles</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, idx) => (
+                <tr key={log._id || idx} className="border-b border-slate-100 hover:bg-slate-50/50">
+                  <td className="py-3 px-4 text-slate-600">
+                    {log.fecha ? new Date(log.fecha).toLocaleString() : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`font-medium ${log.accion === "LOGIN_EXITOSO" ? "text-emerald-600" : log.accion === "LOGIN_FALLIDO" ? "text-red-600" : "text-slate-700"}`}>
+                      {log.accion || "—"}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-slate-600">{log.usuarioId ?? "—"}</td>
+                  <td className="py-3 px-4 text-slate-500 text-xs">{log.ip || "—"}</td>
+                  <td className="py-3 px-4 text-slate-500 text-xs max-w-[200px] truncate" title={typeof log.detalles === "object" ? JSON.stringify(log.detalles) : String(log.detalles || "")}>
+                    {typeof log.detalles === "object" ? JSON.stringify(log.detalles) : log.detalles ? String(log.detalles).slice(0, 60) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }
 

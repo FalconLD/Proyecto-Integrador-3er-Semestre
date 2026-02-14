@@ -69,6 +69,8 @@ export const api = {
       client.put(`/api/admin/roles/${id}`, data).then(handle).catch(handleError),
     deleteRole: (id) =>
       client.delete(`/api/admin/roles/${id}`).then(handle).catch(handleError),
+    getSessionLogs: (params = {}) =>
+      client.get('/api/admin/session-logs', { params }).then(handle).catch(handleError),
   },
   auth: {
     login: (email, password) => client.post('/api/auth/login', { email, password }).then(handle).catch(handleError),

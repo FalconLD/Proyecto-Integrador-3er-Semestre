@@ -5,36 +5,18 @@ import { getAverage, getMinDay, getMaxDay, getWeeklyConsumption } from "../utils
 import { Trophy, TrendingDown, Calendar, Flame, Loader } from "lucide-react";
 import { api } from "../services/api";
 
-const ProgressPage = ({ user }) => {
-  const [history, setHistory] = useState([]);
+const ProgressPage = ({ user, history = [], loadingHistory = false, onGoToDashboard }) => {
   const [streak, setStreak] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.id) return;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Llamadas a tus servicios estándar
-        const historyData = await api.registros.getByUsuario(user.id);
-        const streakData = await api.rachas.getByUsuario(user.id);
-
-        setHistory(historyData || []); 
-        setStreak(streakData || null);
-
-      } catch (error) {
-        console.error("Error cargando datos del dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    api.rachas
+      .getByUsuario(user.id)
+      .then((data) => setStreak(data || null))
+      .catch(() => setStreak(null));
   }, [user?.id]);
 
-  if (loading) {
+  if (loadingHistory) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <Loader className="animate-spin text-blue-600" size={48} />
@@ -46,13 +28,22 @@ const ProgressPage = ({ user }) => {
   if (!history || history.length < 2) {
     return (
       <div className="text-center py-10 space-y-4">
-        <h2 className="text-2xl font-bold text-gray-700">¡Bienvenido a H2O Impact!</h2>
+        <h2 className="text-2xl font-bold text-gray-700">¡Bienvenido a WaterMark!</h2>
         <p className="text-slate-400">
           Aún no tienes suficientes registros para mostrar gráficas.
         </p>
         <p className="text-sm text-blue-500">
           Comienza registrando tu consumo diario en la página principal.
         </p>
+        {onGoToDashboard && (
+          <button
+            type="button"
+            onClick={onGoToDashboard}
+            className="mt-4 px-6 py-3 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            Ir al inicio y registrar consumo
+          </button>
+        )}
       </div>
     );
   }
